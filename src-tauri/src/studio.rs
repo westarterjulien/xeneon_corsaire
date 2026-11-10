@@ -19,6 +19,8 @@ pub fn open<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         .title("Edge Studio")
         .inner_size(1600.0, 940.0)
         .min_inner_size(1100.0, 680.0)
+        // Sinon WebView2 intercepte le glisser-déposer et celui des widgets vers l'aperçu ne marche pas.
+        .disable_drag_drop_handler()
         .visible(false)
         .build()?;
     // Centré sur un écran qui n'est pas l'Edge (de préférence l'écran principal).

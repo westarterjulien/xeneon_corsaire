@@ -3,9 +3,9 @@ import { Kicker } from "../../sdk/components";
 import { Icon } from "../../sdk/icons";
 import { usePages } from "../../sdk/page";
 import { defineWidget } from "../../sdk/types";
-import { AppIcon } from "../apps/AppIcon";
 import { DeckEditor } from "./DeckEditor";
-import { atPath, DEFAULT_DECK, runSteps, type ButtonFace, type DeckButton } from "./model";
+import { FaceVisual } from "./face";
+import { atPath, DEFAULT_DECK, onColor, runSteps, type ButtonFace, type DeckButton } from "./model";
 import "./deck.css";
 
 interface Settings {
@@ -17,10 +17,14 @@ interface Settings {
 }
 
 function Face({ face, folder }: { face: ButtonFace; folder?: boolean }) {
+  const filled = !!face.color;
   return (
     <>
-      <span className="dk-circle" style={face.color ? ({ "--tint": face.color } as CSSProperties) : undefined}>
-        {face.app ? <AppIcon app={face.app} size="calc(var(--s) * .52)" /> : face.icon ? <Icon name={face.icon} /> : <span className="dk-letter">{face.label.charAt(0)}</span>}
+      <span
+        className={`dk-circle ${filled ? "is-filled" : ""}`}
+        style={filled ? ({ "--tint": face.color, color: onColor(face.color) } as CSSProperties) : undefined}
+      >
+        <FaceVisual face={face} size="calc(var(--s) * .5)" />
         {folder && <span className="dk-folder-dot" />}
       </span>
       <span className="dk-label">{face.label}</span>

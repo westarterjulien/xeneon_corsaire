@@ -6,7 +6,8 @@ import { Icon } from "../../sdk/icons";
 import type { SettingEditorProps } from "../../sdk/types";
 import { AppIcon } from "../apps/AppIcon";
 import { ActionForm, defaultAction, summary } from "../shortcuts/ShortcutsEditor";
-import { atPath, COLORS, newId, setAtPath, type ButtonFace, type DeckButton, type Step } from "./model";
+import { FaceVisual } from "./face";
+import { atPath, COLORS, newId, onColor, setAtPath, type ButtonFace, type ButtonImage, type DeckButton, type Step } from "./model";
 
 function stepSummary(s: Step): string {
   if (s.kind === "delay") return `Pause ${(s.ms / 1000).toLocaleString("fr-FR")} s`;
@@ -45,11 +46,79 @@ function AppChooser({ value, onChange }: { value?: InstalledApp; onChange: (a?: 
   );
 }
 
-/** Libellé, icône (bibliothèque ou logiciel) et couleur. */
+// ---------- Logos de marque (Simple Icons, licence CC0) ----------
+const SI_URL = (slug: string) => `https://cdn.jsdelivr.net/npm/simple-icons@13/icons/${slug}.svg`;
+const BRANDS = [
+  "discord", "spotify", "steam", "obsstudio", "twitch", "youtube", "netflix", "epicgames", "battledotnet", "ubisoft",
+  "playstation", "xbox", "nvidia", "amd", "riotgames", "valorant", "leagueoflegends", "x", "whatsapp", "telegram",
+  "github", "notion", "slack", "figma", "googlechrome", "firefoxbrowser", "vlcmediaplayer", "plex", "deezer", "applemusic",
+];
+const slugify = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\+/g, "plus").replace(/[^a-z0-9]/g, "");
+
+/** Télécharge le SVG du logo et le garde dans la configuration (fonctionne ensuite hors ligne). */
+async function brandImage(slug: string): Promise<ButtonImage> {
+  const r = await fetch(SI_URL(slug));
+  if (!r.ok) throw new Error(`logo « ${slug} » introuvable`);
+  const svg = await r.text();
+  if (!svg.trim().startsWith("<svg")) throw new Error("fichier inattendu");
+  return { src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`, mono: true };
+}
+
+/** Image perso : SVG gardé tel quel (si léger), sinon redimensionnée en PNG 160 px. */
+function fileImage(file: File): Promise<ButtonImage> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("lecture impossible"));
+    if (file.type === "image/svg+xml" && file.size < 150_000) {
+      reader.onload = () => resolve({ src: String(reader.result), mono: false });
+      reader.readAsDataURL(file);
+      return;
+    }
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("image illisible"));
+      img.onload = () => {
+        const size = 160;
+        const c = document.createElement("canvas");
+        c.width = c.height = size;
+        const k = Math.min(size / img.width, size / img.height);
+        const w = img.width * k;
+        const h = img.height * k;
+        c.getContext("2d")!.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+        resolve({ src: c.toDataURL("image/png"), mono: false });
+      };
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+type Source = "icon" | "app" | "brand" | "image";
+
+/** Libellé, couleur et visuel (icône, logiciel, logo de marque ou image perso). */
 function FaceForm({ face, onChange }: { face: ButtonFace; onChange: (f: Partial<ButtonFace>) => void }) {
+  const initial: Source = face.image ? (face.image.mono ? "brand" : "image") : face.app ? "app" : "icon";
+  const [source, setSource] = useState<Source>(initial);
+  const [brand, setBrand] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const custom = face.color && !COLORS.includes(face.color);
+  const useBrand = async (slug: string) => {
+    setError(null);
+    try {
+      onChange({ image: await brandImage(slug), app: undefined });
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    }
+  };
   return (
     <>
-      <input type="text" className="sce-label" value={face.label} placeholder="Libellé" onChange={(e) => onChange({ label: e.target.value })} />
+      <div className="dke-preview">
+        <span className="dke-preview-box" style={face.color ? { background: face.color, color: onColor(face.color), borderColor: "transparent" } : undefined}>
+          <FaceVisual face={face} size="34px" />
+        </span>
+        <input type="text" className="sce-label" value={face.label} placeholder="Libellé" onChange={(e) => onChange({ label: e.target.value })} />
+      </div>
+
       <span className="form-label">Couleur</span>
       <div className="dke-colors">
         {COLORS.map((c) => (
@@ -57,10 +126,68 @@ function FaceForm({ face, onChange }: { face: ButtonFace; onChange: (f: Partial<
             {!c && "—"}
           </button>
         ))}
+        <label className={`dke-color dke-custom ${custom ? "is-active" : ""}`} title="Autre couleur">
+          <input type="color" value={face.color ?? "#2563eb"} onChange={(e) => onChange({ color: e.target.value })} />
+        </label>
       </div>
-      <span className="form-label">Icône</span>
-      <AppChooser value={face.app} onChange={(app) => onChange({ app })} />
-      {!face.app && <IconPicker value={face.icon} onChange={(icon) => onChange({ icon })} />}
+
+      <span className="form-label">Visuel</span>
+      <div className="dke-tabs">
+        {([["icon", "Icône"], ["app", "Logiciel"], ["brand", "Logo"], ["image", "Image"]] as [Source, string][]).map(([k, l]) => (
+          <button key={k} type="button" className={source === k ? "is-active" : ""} onClick={() => setSource(k)}>{l}</button>
+        ))}
+      </div>
+      {source === "icon" && <IconPicker value={face.icon} onChange={(icon) => onChange({ icon, app: undefined, image: undefined })} />}
+      {source === "app" && <AppChooser value={face.app} onChange={(app) => onChange({ app, image: undefined })} />}
+      {source === "brand" && (
+        <>
+          <div className="dke-brands">
+            {BRANDS.map((b) => (
+              <button key={b} type="button" className="dke-brand" title={b} onClick={() => useBrand(b)}>
+                <span style={{ WebkitMaskImage: `url(${SI_URL(b)})`, maskImage: `url(${SI_URL(b)})` }} />
+              </button>
+            ))}
+          </div>
+          <div className="apk-path">
+            <input type="text" value={brand} placeholder="Autre marque : ex. Ubisoft Connect, Battle.net, Elgato…" onChange={(e) => setBrand(e.target.value)} onKeyDown={(e) => e.key === "Enter" && useBrand(slugify(brand))} />
+            <button type="button" className="chip" onClick={() => useBrand(slugify(brand))} disabled={!brand.trim()}>Chercher</button>
+          </div>
+          {error && <span className="field-error">{error}</span>}
+          <span className="form-help">Logos Simple Icons (libres de droits), téléchargés une fois puis gardés dans le bouton.</span>
+        </>
+      )}
+      {source === "image" && (
+        <>
+          <label className="chip dke-file">
+            <Icon name="plus" /> Choisir une image (PNG, JPG, SVG…)
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (!f) return;
+                setError(null);
+                try {
+                  onChange({ image: await fileImage(f), app: undefined });
+                } catch (err) {
+                  setError(String((err as Error).message ?? err));
+                }
+              }}
+            />
+          </label>
+          {error && <span className="field-error">{error}</span>}
+        </>
+      )}
+      {face.image && (
+        <label className="dke-inline dke-toggle">
+          <input type="checkbox" checked={face.image.mono} onChange={(e) => onChange({ image: { ...face.image!, mono: e.target.checked } })} />
+          Teinter l'image comme une icône (blanc, ou noir sur couleur claire)
+        </label>
+      )}
+      {face.image && (
+        <button type="button" className="chip" onClick={() => onChange({ image: undefined })}>Retirer l'image</button>
+      )}
     </>
   );
 }
@@ -134,7 +261,9 @@ export function DeckEditor({ value, onChange }: SettingEditorProps) {
         )}
         {list.map((b, i) => (
           <button key={b.id} type="button" className={`sce-item ${sel === b.id ? "is-active" : ""}`} onClick={() => setSel(b.id)}>
-            <span className="sce-ico">{b.app ? <AppIcon app={b.app} size={22} /> : <Icon name={b.icon || "zap"} />}</span>
+            <span className="sce-ico" style={b.color ? { background: b.color, color: onColor(b.color), borderColor: "transparent" } : undefined}>
+              <FaceVisual face={b.icon || b.app || b.image ? b : { ...b, icon: "zap" }} size="20px" />
+            </span>
             <span className="sce-text">
               <span className="sce-name">{b.label || "Sans nom"}</span>
               <span className="sce-sum">

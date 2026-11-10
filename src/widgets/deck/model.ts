@@ -3,13 +3,22 @@ import { bridge, type Action, type InstalledApp } from "../../bridge";
 /** Étape d'un bouton : une action, une pause, ou basculer la sourdine du micro / du son. */
 export type Step = Action | { kind: "delay"; ms: number } | { kind: "audio"; target: "input" | "output" };
 
+export interface ButtonImage {
+  /** data: URL (PNG redimensionné ou SVG), enregistrée dans la configuration. */
+  src: string;
+  /** Monochrome : l'image est teintée comme une icône (logos de marque). */
+  mono: boolean;
+}
+
 export interface ButtonFace {
   label: string;
   /** Nom d'icône de la bibliothèque. */
   icon?: string;
-  /** Vraie icône d'un logiciel installé (prioritaire sur `icon`). */
+  /** Vraie icône d'un logiciel installé. */
   app?: InstalledApp;
-  /** Teinte du bouton (#rrggbb). */
+  /** Logo de marque ou image perso (prioritaire sur `app` et `icon`). */
+  image?: ButtonImage;
+  /** Couleur du bouton (#rrggbb) : fond plein. */
   color?: string;
 }
 
@@ -24,7 +33,16 @@ export interface DeckButton extends ButtonFace {
 
 export const newId = () => Math.random().toString(36).slice(2, 9);
 
-export const COLORS = ["", "#a9c4ff", "#7ee0a1", "#ffd98a", "#ff8a8a", "#c4a8ff", "#7bdff2"];
+/** Couleurs franches (fond plein). "" = bouton neutre au trait. */
+export const COLORS = ["", "#2563eb", "#16a34a", "#eab308", "#f97316", "#dc2626", "#db2777", "#9333ea", "#0891b2", "#f5f5f5"];
+
+/** Texte sombre sur les couleurs claires, blanc sinon. */
+export function onColor(hex?: string): string {
+  if (!hex || !/^#[0-9a-f]{6}$/i.test(hex)) return "var(--text)";
+  const n = parseInt(hex.slice(1), 16);
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  return 0.299 * r + 0.587 * g + 0.114 * b > 170 ? "#111" : "#fff";
+}
 
 const sleep = (ms: number) => new Promise((r) => window.setTimeout(r, ms));
 
@@ -56,13 +74,13 @@ export function setAtPath(buttons: DeckButton[], path: string[], next: DeckButto
 }
 
 export const DEFAULT_DECK: DeckButton[] = [
-  { id: "cap", label: "Capture", icon: "camera", steps: [{ kind: "keys", keys: "win+shift+s" }] },
+  { id: "cap", label: "Capture", icon: "camera", color: "#2563eb", steps: [{ kind: "keys", keys: "win+shift+s" }] },
   {
     id: "mic",
     label: "Micro",
     icon: "mic",
     steps: [{ kind: "audio", target: "input" }],
-    alt: { label: "Micro coupé", icon: "mic-off", color: "#ff8a8a", steps: [{ kind: "audio", target: "input" }] },
+    alt: { label: "Micro coupé", icon: "mic-off", color: "#dc2626", steps: [{ kind: "audio", target: "input" }] },
   },
   { id: "lock", label: "Verrouiller", icon: "lock", steps: [{ kind: "command", command: "rundll32.exe user32.dll,LockWorkStation" }] },
   {

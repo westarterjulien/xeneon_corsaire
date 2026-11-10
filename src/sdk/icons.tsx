@@ -50,6 +50,7 @@ const paths: Record<string, { d: ReactNode; filled?: boolean }> = {
   up: { d: <path d="M12 20V4M6 10l6-6 6 6" /> },
   clipboard: { d: <><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V3h6v1M9 9h6M9 13h6M9 17h4" /></> },
   user: { d: <><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></> },
+  search: { d: <><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></> },
   sun: { d: <><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4" /></> },
   moon: { d: <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" /> },
   partly: { d: <><path d="M9 3.5v1.5M3.5 9H5M5.1 5.1l1 1M13 5.1l-1 1" /><path d="M6.6 11a3.5 3.5 0 0 1 6-3.2" /><path d="M8 20a3.5 3.5 0 1 1 .8-6.9A4.8 4.8 0 0 1 18 14.5 3 3 0 0 1 17.5 20.5H8" /></> },
