@@ -1,0 +1,10 @@
+.dsc { height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 3cqh; padding: 0 28px; }
+.dsc-btns { display: flex; justify-content: space-between; gap: 12px; }
+.dsc-btn { display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.dsc-circle { --s: min(84px, 34cqh, 22cqw); width: var(--s); height: var(--s); border-radius: 50%; border: 1px solid rgba(255, 255, 255, .14); display: grid; place-items: center; font-size: calc(var(--s) * .36); transition: background .2s, color .2s, transform .1s; }
+.dsc-btn:active .dsc-circle { transform: scale(.94); }
+.dsc-btn.is-off .dsc-circle { background: var(--danger); border-color: transparent; color: #200; }
+.dsc-btn.is-flash .dsc-circle { background: rgba(255, 255, 255, .1); }
+.dsc-btn.is-off.is-flash .dsc-circle { background: var(--danger); }
+.dsc-label { font-size: clamp(12px, 4cqh, 16px); color: var(--muted); white-space: nowrap; }
+@container (max-height: 200px) { .dsc .kicker, .dsc-label { display: none; } }

@@ -92,3 +92,14 @@
 .st-right .sizer-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .st-right .stepper-ctl button { width: 32px; height: 32px; font-size: 18px; }
 .st-right .stepper-ctl span { font-size: 16px; }
+
+/* Règles d'affichage automatique */
+.st-auto { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; font-size: 13px; color: var(--muted); }
+.st-auto-label { color: var(--faint); }
+.st-auto-chip { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 6px 0 12px; border-radius: 999px; background: rgba(255, 255, 255, .07); color: var(--text); font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+.st-auto-chip button { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; color: var(--muted); font-size: 12px; }
+.st-auto-chip button:hover { background: rgba(255, 255, 255, .1); }
+.st-auto-input { background: transparent; border: none; border-bottom: 1px solid rgba(255, 255, 255, .14); padding: 6px 0; width: 220px; font-size: 13px; color: var(--text); outline: none; }
+.st-auto-input:focus { border-color: var(--accent); }
+.st-auto-check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.st-auto-check input { accent-color: var(--accent); }

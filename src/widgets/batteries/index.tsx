@@ -7,6 +7,8 @@ import "./batteries.css";
 
 interface Settings {
   low: number;
+  ghub: boolean;
+  icue: boolean;
 }
 
 const ICONS: Record<Battery["kind"], string> = { mouse: "mouse", keyboard: "keyboard", headset: "headset", other: "battery" };
@@ -14,18 +16,26 @@ const ICONS: Record<Battery["kind"], string> = { mouse: "mouse", keyboard: "keyb
 export default defineWidget<Settings>({
   type: "batteries",
   name: "Batteries",
-  description: "Niveau de batterie des périphériques Logitech (via G HUB).",
+  description: "Batterie des périphériques sans fil Logitech (G HUB) et Corsair (iCUE).",
   icon: "battery",
   defaultSize: { w: 3, h: 2 },
   minSize: { w: 2, h: 1 },
-  settings: [{ key: "low", label: "Alerte batterie faible (%)", type: "number", default: 20, min: 5, max: 50, help: "Nécessite Logitech G HUB lancé (il tourne en général déjà en arrière-plan)." }],
+  settings: [
+    { key: "ghub", label: "Logitech (G HUB)", type: "boolean", default: true, help: "G HUB doit être lancé (il tourne en général en arrière-plan)." },
+    { key: "icue", label: "Corsair (iCUE)", type: "boolean", default: true, help: "iCUE doit être lancé. Au premier usage, le kit officiel de Corsair est téléchargé depuis leur GitHub et vérifié." },
+    { key: "low", label: "Alerte batterie faible (%)", type: "number", default: 20, min: 5, max: 50 },
+  ],
   component: ({ settings, size }) => {
-    const { value, error } = useShared<Battery[]>("ghub", bridge.ghubBatteries, 30_000);
+    const off = () => Promise.resolve([] as Battery[]);
+    const g = useShared<Battery[]>(`ghub:${settings.ghub !== false}`, settings.ghub !== false ? bridge.ghubBatteries : off, 30_000);
+    const c = useShared<Battery[]>(`icue:${settings.icue !== false}`, settings.icue !== false ? bridge.icueBatteries : off, 30_000);
+    const value = g.value || c.value ? [...(g.value ?? []), ...(c.value ?? [])] : undefined;
+    const errors = [g.error && settings.ghub !== false ? `Logitech : ${g.error}` : null, c.error && settings.icue !== false ? `Corsair : ${c.error}` : null].filter(Boolean);
     if (!value) {
       return (
         <div className="bat bat-empty">
           <Kicker>Batteries</Kicker>
-          {error && <div className="bat-help">{String(error).includes("lancé") ? "G HUB n'est pas lancé." : `G HUB indisponible : ${error}`}</div>}
+          {errors.map((e) => <div key={e} className="bat-help">{e}</div>)}
         </div>
       );
     }
@@ -33,7 +43,8 @@ export default defineWidget<Settings>({
       return (
         <div className="bat bat-empty">
           <Kicker>Batteries</Kicker>
-          <div className="bat-help">Aucun périphérique sans fil Logitech allumé.</div>
+          <div className="bat-help">Aucun périphérique sans fil allumé.</div>
+          {errors.map((e) => <div key={e} className="bat-note">{e}</div>)}
         </div>
       );
     }

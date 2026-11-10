@@ -1,0 +1,12 @@
+.tms { height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 2.4cqh; padding: 0 28px; }
+.tms-now { display: flex; align-items: center; gap: 18px; }
+.tms-dot { width: clamp(14px, 4cqh, 22px); height: clamp(14px, 4cqh, 22px); border-radius: 50%; flex-shrink: 0; transition: background .3s; }
+.tms-label { font-size: clamp(22px, 9cqh, 46px); font-weight: 200; letter-spacing: -.02em; }
+.tms-choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.tms-btn { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .12); font-size: 14px; color: var(--muted); }
+.tms-btn.is-active { border-color: var(--text); color: var(--text); }
+.tms-btn:active { background: var(--hover); }
+.tms-btn:disabled { opacity: .5; }
+.tms-mini { width: 8px; height: 8px; border-radius: 50%; }
+.tms-auto { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+@container (max-height: 360px) { .tms-btn { height: 36px; font-size: 13px; padding: 0 12px; } .tms { gap: 14px; } }

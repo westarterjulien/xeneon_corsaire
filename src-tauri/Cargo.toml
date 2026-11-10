@@ -19,6 +19,10 @@ sysinfo = "0.32"
 ureq = { version = "2", default-features = false, features = ["json", "native-tls"] }
 native-tls = "0.2"
 png = "0.17"
+arboard = { version = "3", default-features = false }
+libloading = "0.8"
+sha2 = "0.10"
+zip = { version = "2", default-features = false, features = ["deflate"] }
 tungstenite = "0.24"
 base64 = "0.22"
 tauri-plugin-autostart = "2"
@@ -34,6 +38,7 @@ windows = { version = "0.58", features = [
   "Win32_Foundation",
   "Win32_Graphics_Gdi",
   "Win32_Media_Audio",
+  "Win32_NetworkManagement_IpHelper",
   "Win32_Media_Audio_Endpoints",
   "Win32_System_Com",
   "Win32_System_Com_StructuredStorage",

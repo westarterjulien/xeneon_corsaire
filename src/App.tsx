@@ -7,6 +7,8 @@ import { publish, subscribe } from "./core/sync";
 import { AppSettings, Palette, WidgetSettings } from "./core/Panels";
 import { Icon } from "./sdk/icons";
 import { useRegistryVersion, widgetRegistry } from "./sdk/registry";
+import { useNow, useShared } from "./sdk/hooks";
+import type { Foreground } from "./bridge";
 import { ThemeContext } from "./sdk/theme";
 import { useUserWidgetsLoader } from "./core/userWidgets";
 import { PageContext } from "./sdk/page";
@@ -100,6 +102,45 @@ export default function App() {
     if (name?.trim()) setConfig({ ...config, pages: config.pages.map((p) => (p.id === page.id ? { ...p, name: name.trim() } : p)) });
   };
 
+  // ---------- Page automatique selon l'appli au premier plan ----------
+  const hasAuto = pages.some((p) => p.auto && (p.auto.apps.length || p.auto.fullscreen));
+  const { value: fg } = useShared<Foreground | null>(`fg:${hasAuto}`, hasAuto ? bridge.foregroundApp : () => Promise.resolve(null), 1000);
+  const auto = useRef<{ index: number; previous: number } | null>(null);
+  useEffect(() => {
+    if (!hasAuto || editing || !fg) return;
+    const byApp = pages.findIndex((p) => p.auto?.apps.includes(fg.exe));
+    const match = byApp >= 0 ? byApp : fg.fullscreen ? pages.findIndex((p) => p.auto?.fullscreen) : -1;
+    if (match >= 0) {
+      if (auto.current?.index !== match) {
+        auto.current = { index: match, previous: auto.current?.previous ?? pageIndex };
+        goTo(match);
+      }
+    } else if (auto.current) {
+      // L'appli n'est plus au premier plan : retour à la page d'avant.
+      goTo(auto.current.previous);
+      auto.current = null;
+    }
+  }, [fg?.exe, fg?.fullscreen, hasAuto, editing]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ---------- Mode nuit ----------
+  const now = useNow(30_000);
+  const [wakeUntil, setWakeUntil] = useState(0);
+  const night = config?.night;
+  const minutes = (t: string) => {
+    const [h, m] = t.split(":").map(Number);
+    return (h || 0) * 60 + (m || 0);
+  };
+  const cur = now.getHours() * 60 + now.getMinutes();
+  const inNight =
+    !!night?.enabled &&
+    !editing &&
+    now.getTime() > wakeUntil &&
+    (() => {
+      const a = minutes(night.from);
+      const b = minutes(night.to);
+      return a <= b ? cur >= a && cur < b : cur >= a || cur < b;
+    })();
+
   const style = useMemo(
     () => (config ? ({ "--accent": config.theme.accent, "--bg": config.theme.background } as CSSProperties) : undefined),
     [config?.theme.accent, config?.theme.background],
@@ -171,6 +212,23 @@ export default function App() {
         )}
         {panel?.kind === "app" && <AppSettings config={config} onChange={setConfig} onClose={() => setPanel(null)} />}
         {notice && <div className="toast">{notice}</div>}
+        {inNight && night && (
+          <div
+            className={`night night-${night.mode}`}
+            style={night.mode === "dim" ? { background: `rgba(0, 0, 0, ${Math.min(95, Math.max(10, night.level)) / 100})` } : undefined}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              setWakeUntil(Date.now() + 5 * 60_000);
+            }}
+          >
+            {night.mode === "clock" && (
+              <div className="night-clock">
+                <div className="night-time">{now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</div>
+                <div className="night-date">{now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </PageContext.Provider>
     </ThemeContext.Provider>

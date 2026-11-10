@@ -2,12 +2,18 @@ mod actions;
 mod apps;
 mod audio;
 mod calendar;
+mod clipboard;
 mod config;
 mod display;
+mod foreground;
 mod ghub;
 mod gpu;
+mod homeassistant;
+mod icue;
 mod keys;
 mod media;
+mod network;
+mod secret;
 mod studio;
 mod system;
 mod taskbar;
@@ -34,6 +40,13 @@ pub fn run() {
             apps::installed_apps,
             apps::app_icon,
             ghub::ghub_batteries,
+            icue::icue_batteries,
+            foreground::foreground_app,
+            network::network_stats,
+            network::ping,
+            clipboard::clipboard_history,
+            clipboard::clipboard_clear,
+            clipboard::clipboard_use,
             audio::audio_set,
             media::media_info,
             media::media_control,
@@ -52,6 +65,12 @@ pub fn run() {
             calendar::calendar_connect,
             calendar::calendar_disconnect,
             calendar::calendar_events,
+            calendar::teams_presence,
+            calendar::teams_set_presence,
+            homeassistant::ha_save,
+            homeassistant::ha_has_token,
+            homeassistant::ha_states,
+            homeassistant::ha_service,
         ])
         .setup(|app| {
             let window = app.get_webview_window("main").expect("fenêtre principale absente");
@@ -68,6 +87,8 @@ pub fn run() {
                 .unwrap_or(true);
             taskbar::set_enabled(hide_taskbar);
             taskbar::start();
+            foreground::start();
+            clipboard::start();
             let preferred = config::read(app.handle())
                 .and_then(|c| c.pointer("/display/monitor").and_then(|m| m.as_str()).map(str::to_owned));
             if let Err(e) = display::place_on_edge(&window, preferred.as_deref()) {

@@ -12,7 +12,8 @@ use std::{
 };
 use tauri::{AppHandle, Emitter, Manager};
 
-const SCOPES: &str = "offline_access User.Read Calendars.Read";
+// Presence.ReadWrite : statut Teams (lecture et changement).
+const SCOPES: &str = "offline_access User.Read Calendars.Read Presence.ReadWrite";
 
 struct Pending {
     user_code: String,
@@ -85,47 +86,23 @@ fn load(app: &AppHandle) -> Option<Stored> {
     serde_json::from_slice(&unprotect(&raw).ok()?).ok()
 }
 
-// ---------- Chiffrement DPAPI (Windows) ----------
-#[cfg(windows)]
-fn dpapi(data: &[u8], encrypt: bool) -> Result<Vec<u8>, String> {
-    use windows::Win32::Foundation::{LocalFree, HLOCAL};
-    use windows::Win32::Security::Cryptography::{CryptProtectData, CryptUnprotectData, CRYPT_INTEGER_BLOB};
-    let input = CRYPT_INTEGER_BLOB { cbData: data.len() as u32, pbData: data.as_ptr() as *mut u8 };
-    let mut out = CRYPT_INTEGER_BLOB::default();
-    unsafe {
-        if encrypt {
-            CryptProtectData(&input, None, None, None, None, 0, &mut out)
-        } else {
-            CryptUnprotectData(&input, None, None, None, None, 0, &mut out)
-        }
-        .map_err(|e| e.to_string())?;
-        let bytes = std::slice::from_raw_parts(out.pbData, out.cbData as usize).to_vec();
-        let _ = LocalFree(HLOCAL(out.pbData as *mut _));
-        Ok(bytes)
-    }
-}
-
-#[cfg(windows)]
-fn protect(data: &[u8]) -> Result<Vec<u8>, String> {
-    dpapi(data, true)
-}
-#[cfg(windows)]
-fn unprotect(data: &[u8]) -> Result<Vec<u8>, String> {
-    dpapi(data, false)
-}
-#[cfg(not(windows))]
-fn protect(data: &[u8]) -> Result<Vec<u8>, String> {
-    Ok(data.to_vec())
-}
-#[cfg(not(windows))]
-fn unprotect(data: &[u8]) -> Result<Vec<u8>, String> {
-    Ok(data.to_vec())
-}
+use crate::secret::{protect, unprotect};
 
 // ---------- Jetons ----------
 fn graph_get(token: &str, url: &str) -> Result<Value, String> {
     match agent()?.get(url).set("Authorization", &format!("Bearer {token}")).set("Prefer", "outlook.timezone=\"UTC\"").call() {
         Ok(r) => r.into_json().map_err(|e| e.to_string()),
+        Err(ureq::Error::Status(code, r)) => {
+            let v: Value = r.into_json().unwrap_or_default();
+            Err(format!("Microsoft Graph ({code}) : {}", v.pointer("/error/message").and_then(Value::as_str).unwrap_or("erreur")))
+        }
+        Err(e) => Err(format!("connexion à Microsoft impossible : {e}")),
+    }
+}
+
+fn graph_post(token: &str, url: &str, body: Value) -> Result<(), String> {
+    match agent()?.post(url).set("Authorization", &format!("Bearer {token}")).send_json(body) {
+        Ok(_) => Ok(()),
         Err(ureq::Error::Status(code, r)) => {
             let v: Value = r.into_json().unwrap_or_default();
             Err(format!("Microsoft Graph ({code}) : {}", v.pointer("/error/message").and_then(Value::as_str).unwrap_or("erreur")))
@@ -393,4 +370,58 @@ mod tests {
         assert_eq!(e[1].subject, "(sans titre)");
         assert!(e[1].all_day);
     }
+}
+
+// ---------- Statut Teams ----------
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Presence {
+    availability: String,
+    activity: String,
+}
+
+#[tauri::command]
+pub async fn teams_presence(app: AppHandle, client_id: String, tenant: String) -> Result<Presence, String> {
+    validate(&client_id, &tenant)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let token = access_token(&app, &client_id, &tenant)?;
+        let v = graph_get(&token, "https://graph.microsoft.com/v1.0/me/presence")?;
+        let s = |k: &str| v.get(k).and_then(Value::as_str).unwrap_or_default().to_string();
+        Ok(Presence { availability: s("availability"), activity: s("activity") })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// `availability` vide = revenir au statut automatique de Teams.
+#[tauri::command]
+pub async fn teams_set_presence(app: AppHandle, client_id: String, tenant: String, availability: String, hours: u32) -> Result<(), String> {
+    validate(&client_id, &tenant)?;
+    // Disponibilités acceptées par Graph et activité correspondante.
+    let activity = match availability.as_str() {
+        "" => "",
+        "Available" => "Available",
+        "Busy" => "Busy",
+        "DoNotDisturb" => "DoNotDisturb",
+        "BeRightBack" => "BeRightBack",
+        "Away" => "Away",
+        "Offline" => "OffWork",
+        _ => return Err("statut inconnu".into()),
+    }
+    .to_string();
+    let hours = hours.clamp(1, 24);
+    tauri::async_runtime::spawn_blocking(move || {
+        let token = access_token(&app, &client_id, &tenant)?;
+        if availability.is_empty() {
+            graph_post(&token, "https://graph.microsoft.com/v1.0/me/presence/clearUserPreferredPresence", serde_json::json!({}))
+        } else {
+            graph_post(
+                &token,
+                "https://graph.microsoft.com/v1.0/me/presence/setUserPreferredPresence",
+                serde_json::json!({ "availability": availability, "activity": activity, "expirationDuration": format!("PT{hours}H") }),
+            )
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }

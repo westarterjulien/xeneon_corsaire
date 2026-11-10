@@ -203,3 +203,14 @@ input, select, textarea { font: inherit; color: inherit; user-select: text; -web
 .slider.is-dragging .slider-knob { transform: scale(1.25); }
 .slider.is-disabled { opacity: .35; }
 .slider.is-disabled .slider-fill { background: var(--muted); }
+
+/* ---------- Mode nuit ---------- */
+.night { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; transition: opacity 1s; }
+.night-clock-wrap, .night-clock { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.night-clock { background: #000; }
+.night-time { font-size: 300px; font-weight: 100; letter-spacing: -.05em; line-height: .9; color: rgba(238, 242, 247, .55); }
+.night-date { font-size: 28px; font-weight: 300; color: rgba(238, 242, 247, .3); margin-top: 24px; text-transform: capitalize; }
+.form-row.form-inline input[type="time"] { width: auto; }
+.form-inline-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-weight: 300; }
+.form .form-inline-row input[type="time"], .form .form-inline-row input[type="number"], .form .form-inline-row select { width: auto; background: transparent; border: none; border-bottom: 1px solid rgba(255, 255, 255, .14); padding: 6px 0; font-size: 16px; color: var(--text); color-scheme: dark; }
+.form .form-inline-row input[type="number"] { width: 64px; }

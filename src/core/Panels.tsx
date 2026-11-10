@@ -263,6 +263,24 @@ export function AppearanceForm({ config, onChange }: { config: AppConfig; onChan
             <span>Masquer la barre des tâches Windows sur l'Edge</span>
           </label>
         )}
+        <div className="form-row is-wide">
+          <span className="form-label">Mode nuit</span>
+          <label className="form-inline-row">
+            <input type="checkbox" checked={config.night.enabled} onChange={(e) => onChange({ ...config, night: { ...config.night, enabled: e.target.checked } })} />
+            <span>De</span>
+            <input type="time" value={config.night.from} onChange={(e) => onChange({ ...config, night: { ...config.night, from: e.target.value } })} />
+            <span>à</span>
+            <input type="time" value={config.night.to} onChange={(e) => onChange({ ...config, night: { ...config.night, to: e.target.value } })} />
+            <select value={config.night.mode} onChange={(e) => onChange({ ...config, night: { ...config.night, mode: e.target.value as "dim" | "clock" } })}>
+              <option value="clock">Grande horloge</option>
+              <option value="dim">Assombrir</option>
+            </select>
+            {config.night.mode === "dim" && (
+              <input type="number" min={10} max={95} step={5} value={config.night.level} onChange={(e) => onChange({ ...config, night: { ...config.night, level: Number(e.target.value) } })} aria-label="Assombrissement (%)" />
+            )}
+          </label>
+          <span className="form-help">Un toucher sur l'Edge le réveille 5 minutes.</span>
+        </div>
         <label className="form-row">
           <span className="form-label">Couleur d'accent</span>
           <input type="color" value={config.theme.accent} onChange={(e) => onChange({ ...config, theme: { ...config.theme, accent: e.target.value } })} />

@@ -1,0 +1,10 @@
+.net { height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 2.4cqh; padding: 0 28px; }
+.net-rates { display: flex; gap: 5cqw; align-items: baseline; flex-wrap: wrap; }
+.net-rate { display: flex; align-items: baseline; gap: 8px; }
+.net-arrow { width: clamp(16px, 5cqh, 24px) !important; height: clamp(16px, 5cqh, 24px) !important; color: var(--accent); align-self: center; }
+.net-rate.is-up .net-arrow { color: var(--muted); }
+.net-val { font-size: min(18cqh, 9cqw); font-weight: 200; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+.net-unit { font-size: clamp(12px, 3.6cqh, 16px); color: var(--faint); }
+.net-ping { margin-left: auto; }
+.net-ping .net-val { font-size: min(12cqh, 6cqw); }
+.net-ips { display: flex; gap: 24px; font-size: 13px; color: var(--faint); letter-spacing: .04em; }

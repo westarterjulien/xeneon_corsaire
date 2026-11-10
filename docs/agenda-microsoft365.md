@@ -1,6 +1,7 @@
-# Agenda Microsoft 365 : mise en route (5 minutes, une seule fois)
+# Agenda et statut Teams (Microsoft 365) : mise en route (5 minutes, une seule fois)
 
-Le widget **Agenda** lit ton calendrier Outlook / Microsoft 365 via Microsoft Graph, sans lien iCal.
+Les widgets **Agenda** (calendrier Outlook) et **Statut Teams** (ta disponibilité) passent par Microsoft Graph, sans lien iCal.
+Ils partagent la même inscription et la même connexion : à faire une seule fois pour les deux.
 Il lui faut une « inscription d'application » dans ton Microsoft 365 : c'est gratuit, ça se fait une fois,
 et ça ne donne accès qu'à **ton** calendrier, **en lecture seule**, après ta connexion.
 
@@ -28,8 +29,8 @@ et ça ne donne accès qu'à **ton** calendrier, **en lecture seule**, après ta
 
 1. Menu de l'application : **Autorisations d'API**.
 2. **+ Ajouter une autorisation** → **Microsoft Graph** → **Autorisations déléguées**.
-3. Cherche et coche **Calendars.Read** → **Ajouter des autorisations**.
-   (`User.Read` est déjà présent : il sert à afficher ton adresse.)
+3. Cherche et coche **Calendars.Read** et **Presence.ReadWrite** → **Ajouter des autorisations**.
+   (`User.Read` est déjà présent : il sert à afficher ton adresse. `Presence.ReadWrite` sert au statut Teams.)
 4. Facultatif mais conseillé : **Accorder un consentement d'administrateur pour [ton entreprise]** → **Oui**
    (évite une demande d'approbation à la connexion).
 
@@ -55,3 +56,4 @@ Pour la couper : réglages du widget → **Compte** → **Se déconnecter**.
 | `AADSTS700016`, application introuvable | Vérifie l'**ID d'application** (copié depuis *Vue d'ensemble*) |
 | « session expirée, reconnecte-toi » | Le jeton a été révoqué (changement de mot de passe, politique) : touche **Se connecter** |
 | « code expiré » | Le code est valable 15 minutes : recommence |
+| Statut Teams : « Forbidden » ou consentement requis | Ajoute **Presence.ReadWrite** (étape 3), accorde le consentement, puis **Se connecter** à nouveau |

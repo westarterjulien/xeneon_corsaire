@@ -54,9 +54,10 @@ function subscribeShared<T>(key: string, fetcher: () => Promise<T>, intervalMs: 
 }
 
 export function useShared<T>(key: string, fetcher: () => Promise<T>, intervalMs = 1000, keepHistory = 0) {
-  const ref = useRef<ReturnType<typeof subscribeShared<T>>>();
-  if (!ref.current) ref.current = subscribeShared(key, fetcher, intervalMs, keepHistory);
-  return useSyncExternalStore(ref.current.subscribe, ref.current.get);
+  // Se réabonne si la clé change (ex. adresse modifiée dans les réglages).
+  const ref = useRef<{ key: string; sub: ReturnType<typeof subscribeShared<T>> }>();
+  if (!ref.current || ref.current.key !== key) ref.current = { key, sub: subscribeShared(key, fetcher, intervalMs, keepHistory) };
+  return useSyncExternalStore(ref.current.sub.subscribe, ref.current.sub.get);
 }
 
 export const useSystemStats = () => useShared<SystemStats>("system", bridge.systemStats, 1000, 60);

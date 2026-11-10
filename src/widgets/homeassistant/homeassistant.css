@@ -1,0 +1,15 @@
+.ha { height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 2.4cqh; padding: 0 28px; }
+.ha-empty { gap: 10px; }
+.ha-grid { display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 2cqh 10px; }
+.ha-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px 4px; border-radius: 16px; min-width: 0; text-align: left; transition: transform .1s; }
+.ha-tile:active:not(.is-readonly) { transform: scale(.96); }
+.ha-icon { width: clamp(40px, 13cqh, 56px); height: clamp(40px, 13cqh, 56px); border-radius: 50%; border: 1px solid rgba(255, 255, 255, .14); display: grid; place-items: center; font-size: clamp(18px, 5cqh, 24px); transition: background .2s, color .2s; }
+.ha-tile.is-on .ha-icon { background: #ffd98a; color: #2a1d00; border-color: transparent; box-shadow: 0 0 22px rgba(255, 217, 138, .35); }
+.ha-tile.is-readonly .ha-icon { border-color: transparent; color: var(--accent); }
+.ha-name { font-size: clamp(13px, 3.6cqh, 16px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.ha-state { font-size: clamp(12px, 3.2cqh, 14px); color: var(--faint); }
+.ha-tile.is-readonly .ha-state { font-size: clamp(18px, 6cqh, 28px); font-weight: 200; color: var(--text); }
+.ha-conn { display: flex; flex-direction: column; gap: 8px; }
+.ha-conn-row { display: flex; gap: 8px; align-items: center; }
+.ha-conn-row input { flex: 1; min-width: 0; background: transparent; border: none; border-bottom: 1px solid rgba(255, 255, 255, .14); padding: 10px 0; font-size: 17px; color: var(--text); outline: none; }
+.apk .ha-name { flex: 1; }

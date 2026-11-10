@@ -69,7 +69,15 @@ pub async fn run_action(action: Action) -> Result<(), String> {
     match action {
         Action::Open { target } => open_target(&target),
         Action::Command { command } => shell(&command),
-        Action::Keys { keys } => crate::keys::send_combo(&keys),
+        Action::Keys { keys } => {
+            // Toucher l'Edge lui a donné le focus : les touches doivent repartir vers l'appli d'avant.
+            tauri::async_runtime::spawn_blocking(move || {
+                crate::foreground::focus_previous();
+                crate::keys::send_combo(&keys)
+            })
+            .await
+            .map_err(|e| e.to_string())?
+        }
         Action::Media { command } => crate::media::control(&command),
     }
 }

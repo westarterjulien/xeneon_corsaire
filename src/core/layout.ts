@@ -13,16 +13,35 @@ export interface WidgetInstance {
   settings: Record<string, unknown>;
 }
 
+export interface PageAuto {
+  /** Exécutables (sans .exe, en minuscules) qui affichent cette page quand ils sont au premier plan. */
+  apps: string[];
+  /** Toute appli en plein écran (jeux, vidéos). */
+  fullscreen: boolean;
+}
+
 export interface Page {
   id: string;
   name: string;
   widgets: WidgetInstance[];
+  auto?: PageAuto;
+}
+
+export interface NightMode {
+  enabled: boolean;
+  /** "HH:MM" */
+  from: string;
+  to: string;
+  mode: "dim" | "clock";
+  /** Assombrissement en % (mode « dim »). */
+  level: number;
 }
 
 export interface AppConfig {
   version: 1;
   theme: { accent: string; background: string };
   display: { monitor: string | null; hideTaskbar: boolean };
+  night: NightMode;
   pages: Page[];
 }
 
@@ -63,6 +82,7 @@ export function defaultConfig(): AppConfig {
     version: 1,
     theme: { accent: "#a9c4ff", background: "#07090c" },
     display: { monitor: null, hideTaskbar: true },
+    night: { enabled: false, from: "23:00", to: "07:00", mode: "clock", level: 75 },
     pages: [
       {
         id: uid(),
@@ -94,6 +114,7 @@ export function sanitizeConfig(raw: unknown): AppConfig {
         id: p.id || uid(),
         name: p.name || "Page",
         widgets: (p.widgets ?? []).filter((w) => fitsGrid(w)).map((w) => ({ ...w, settings: w.settings ?? {} })),
+        ...(p.auto ? { auto: { apps: Array.isArray(p.auto.apps) ? p.auto.apps.map(String) : [], fullscreen: !!p.auto.fullscreen } } : {}),
       }))
     : base.pages;
   const theme = { ...base.theme, ...(c.theme ?? {}) };
@@ -104,6 +125,7 @@ export function sanitizeConfig(raw: unknown): AppConfig {
     version: 1,
     theme,
     display: { ...base.display, ...(c.display ?? {}) },
+    night: { ...base.night, ...(c.night ?? {}) },
     pages,
   };
 }

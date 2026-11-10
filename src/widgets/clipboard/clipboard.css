@@ -1,0 +1,14 @@
+.clp { height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 12px; padding: 0 28px; }
+.clp-head { display: flex; align-items: center; justify-content: space-between; }
+.clp-clear { font-size: 13px; color: var(--faint); padding: 6px 10px; border-radius: 999px; }
+.clp-clear:active { background: var(--hover); }
+.clp-empty { color: var(--muted); font-weight: 300; font-size: 16px; }
+.clp-list { display: flex; flex-direction: column; border-top: 1px solid var(--line); min-height: 0; overflow: hidden; }
+.clp-item { display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; column-gap: 14px; text-align: left; padding: 12px 4px; border-bottom: 1px solid var(--line); min-width: 0; }
+.clp-item:active, .clp-item.is-done { background: rgba(255, 255, 255, .05); }
+.clp-text { grid-column: 1; font-size: 16px; font-weight: 300; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; line-height: 1.35; }
+.clp-meta { grid-column: 1; font-size: 12px; color: var(--faint); margin-top: 4px; }
+.clp-item.is-done .clp-meta { color: #7ee0a1; }
+.clp-icon { grid-column: 2; grid-row: 1 / span 2; align-self: center; width: 18px !important; height: 18px !important; color: var(--faint); }
+.clp.is-blur .clp-text { filter: blur(6px); }
+.clp.is-blur .clp-item:active .clp-text { filter: none; }

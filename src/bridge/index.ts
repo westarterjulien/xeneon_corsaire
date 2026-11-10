@@ -88,6 +88,39 @@ export interface Battery {
   charging: boolean;
 }
 
+export interface Foreground {
+  exe: string;
+  title: string;
+  fullscreen: boolean;
+}
+
+export interface NetStats {
+  /** Octets par seconde. */
+  down: number;
+  up: number;
+  localIp: string | null;
+}
+
+export interface Clip {
+  id: number;
+  text: string;
+  at: number;
+}
+
+export interface Presence {
+  availability: string;
+  activity: string;
+}
+
+export interface HaEntity {
+  entityId: string;
+  domain: string;
+  name: string;
+  state: string;
+  unit: string | null;
+  deviceClass: string | null;
+}
+
 export interface MonitorInfo {
   name: string | null;
   width: number;
@@ -183,6 +216,20 @@ const mockAudio: AudioState = {
 const mockApps: InstalledApp[] = ["Spotify", "Discord", "Steam", "Chrome", "Visual Studio Code", "OBS Studio", "Explorateur de fichiers", "Calculatrice", "Bloc-notes", "Paramètres", "Outlook", "Teams"].map(
   (name) => ({ name, id: `simulation.${name.toLowerCase().replace(/\W+/g, "")}` }),
 );
+const mockClips: Clip[] = [
+  { id: 3, text: "https://github.com/westarterjulien/xeneon_corsaire", at: Date.now() - 60_000 },
+  { id: 2, text: "Réunion décalée à 15h, je t'envoie le lien Teams.", at: Date.now() - 600_000 },
+  { id: 1, text: "SELECT * FROM commandes WHERE statut = 'en_attente';", at: Date.now() - 3_600_000 },
+];
+let mockPresence = "Available";
+const mockHa: HaEntity[] = [
+  { entityId: "light.salon", domain: "light", name: "Salon", state: "on", unit: null, deviceClass: null },
+  { entityId: "light.bureau", domain: "light", name: "Bureau", state: "off", unit: null, deviceClass: null },
+  { entityId: "switch.cafetiere", domain: "switch", name: "Cafetière", state: "off", unit: null, deviceClass: null },
+  { entityId: "scene.cinema", domain: "scene", name: "Cinéma", state: "scening", unit: null, deviceClass: null },
+  { entityId: "sensor.temperature_bureau", domain: "sensor", name: "Température bureau", state: "21.4", unit: "°C", deviceClass: "temperature" },
+  { entityId: "sensor.humidite_bureau", domain: "sensor", name: "Humidité bureau", state: "48", unit: "%", deviceClass: "humidity" },
+];
 const t0 = Date.now();
 const wave = (period: number, phase = 0) => (Math.sin(((Date.now() - t0) / period) * Math.PI * 2 + phase) + 1) / 2;
 const jitter = (n: number) => (Math.random() - 0.5) * n;
@@ -339,6 +386,41 @@ export const bridge = {
           { id: "2", name: "PRO X Wireless", kind: "headset", percentage: 18, charging: true },
           { id: "3", name: "G915 TKL", kind: "keyboard", percentage: 88, charging: false },
         ]),
+
+  // ---------- Appli au premier plan ----------
+  foregroundApp: (): Promise<Foreground | null> => (isTauri ? call("foreground_app") : Promise.resolve(null)),
+
+  // ---------- Réseau ----------
+  networkStats: (): Promise<NetStats> =>
+    isTauri ? call("network_stats") : Promise.resolve({ down: (2 + wave(8000) * 60) * 125_000, up: (0.5 + wave(11000) * 8) * 125_000, localIp: "192.168.1.42" }),
+  ping: (host: string): Promise<number> => (isTauri ? call("ping", { host }) : Promise.resolve(Math.round(9 + wave(7000) * 12))),
+
+  // ---------- Presse-papiers ----------
+  clipboardHistory: (): Promise<Clip[]> => (isTauri ? call("clipboard_history") : Promise.resolve(mockClips)),
+  clipboardUse: (id: number, paste: boolean): Promise<void> => (isTauri ? call("clipboard_use", { id, paste }) : Promise.resolve()),
+  clipboardClear: (): Promise<void> => (isTauri ? call("clipboard_clear") : Promise.resolve(void mockClips.splice(0))),
+
+  // ---------- Statut Teams ----------
+  teamsPresence: (clientId: string, tenant: string): Promise<Presence> =>
+    isTauri ? call("teams_presence", { clientId, tenant }) : Promise.resolve({ availability: mockPresence, activity: mockPresence }),
+  teamsSetPresence: async (clientId: string, tenant: string, availability: string, hours: number): Promise<void> => {
+    if (isTauri) return call("teams_set_presence", { clientId, tenant, availability, hours });
+    mockPresence = availability || "Available";
+  },
+
+  // ---------- Home Assistant ----------
+  haSave: (url: string, token: string): Promise<void> => (isTauri ? call("ha_save", { url, token }) : Promise.resolve()),
+  haHasToken: (url: string): Promise<boolean> => (isTauri ? call("ha_has_token", { url }) : Promise.resolve(true)),
+  haStates: (url: string): Promise<HaEntity[]> => (isTauri ? call("ha_states", { url }) : Promise.resolve(structuredClone(mockHa))),
+  haService: async (url: string, domain: string, service: string, entityId: string): Promise<void> => {
+    if (isTauri) return call("ha_service", { url, domain, service, entityId });
+    const e = mockHa.find((x) => x.entityId === entityId);
+    if (e && service === "toggle") e.state = e.state === "on" ? "off" : "on";
+  },
+
+  // ---------- Corsair iCUE ----------
+  icueBatteries: (): Promise<Battery[]> =>
+    isTauri ? call("icue_batteries") : Promise.resolve([{ id: "c1", name: "VIRTUOSO RGB WIRELESS XT", kind: "headset", percentage: 54, charging: false }]),
 
   /** Masque (ou réaffiche) la barre des tâches Windows sur l'écran de l'Edge. */
   taskbarSet: (hidden: boolean): Promise<void> => (isTauri ? call("taskbar_set", { hidden }) : Promise.resolve()),

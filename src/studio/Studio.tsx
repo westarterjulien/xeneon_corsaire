@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Grid } from "../core/Grid";
-import { createInstance, findFreeSpot, uid, type Page, type WidgetInstance } from "../core/layout";
+import { createInstance, findFreeSpot, uid, type Page, type PageAuto, type WidgetInstance } from "../core/layout";
+import { bridge, isTauri } from "../bridge";
 import { AppearanceForm, SettingsForm, SizeControls, WidgetLibrary } from "../core/Panels";
 import { useAppConfig } from "../core/store";
 import { publish, subscribe } from "../core/sync";
@@ -9,6 +10,63 @@ import { Icon } from "../sdk/icons";
 import { PageContext } from "../sdk/page";
 import { isUserWidget, useRegistryVersion, widgetRegistry } from "../sdk/registry";
 import { ThemeContext } from "../sdk/theme";
+
+/** Règles d'affichage automatique d'une page selon l'appli au premier plan. */
+function AutoRules({ page, onChange }: { page: Page; onChange: (auto: PageAuto) => void }) {
+  const auto = page.auto ?? { apps: [], fullscreen: false };
+  const [name, setName] = useState("");
+  const [count, setCount] = useState<number | null>(null);
+  const add = (exe: string) => {
+    const e = exe.trim().toLowerCase().replace(/\.exe$/, "");
+    if (e && !auto.apps.includes(e)) onChange({ ...auto, apps: [...auto.apps, e] });
+  };
+  // Capture : laisse 5 s pour basculer sur l'appli voulue, puis lit l'appli au premier plan.
+  const capture = () => {
+    let n = 5;
+    setCount(n);
+    const id = window.setInterval(async () => {
+      n -= 1;
+      setCount(n);
+      if (n > 0) return;
+      window.clearInterval(id);
+      setCount(null);
+      const fg = await bridge.foregroundApp().catch(() => null);
+      if (fg?.exe) add(fg.exe);
+    }, 1000);
+  };
+  return (
+    <div className="st-auto">
+      <span className="st-auto-label">Afficher automatiquement quand</span>
+      {auto.apps.map((a) => (
+        <span key={a} className="st-auto-chip">
+          {a}
+          <button onClick={() => onChange({ ...auto, apps: auto.apps.filter((x) => x !== a) })} aria-label={`Retirer ${a}`}><Icon name="close" /></button>
+        </span>
+      ))}
+      <input
+        className="st-auto-input"
+        value={name}
+        placeholder="nom du programme (ex. cs2, teams)"
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            add(name);
+            setName("");
+          }
+        }}
+      />
+      {isTauri && (
+        <button className="st-btn" onClick={capture} disabled={count !== null}>
+          {count !== null ? `Bascule sur l'appli… ${count}` : "Capturer l'appli active"}
+        </button>
+      )}
+      <label className="st-auto-check">
+        <input type="checkbox" checked={auto.fullscreen} onChange={(e) => onChange({ ...auto, fullscreen: e.target.checked })} />
+        une appli est en plein écran (jeux)
+      </label>
+    </div>
+  );
+}
 
 /** Aperçu de l'Edge à l'échelle, éditable à la souris. */
 function EdgePreview({ page, selectedId, onSelect, onChange, onOpenSettings }: { page: Page; selectedId: string | null; onSelect: (id: string | null) => void; onChange: (w: WidgetInstance[]) => void; onOpenSettings: (id: string) => void }) {
@@ -166,6 +224,7 @@ export default function Studio() {
               <button className="st-btn" onClick={() => movePage(1)} disabled={index === pages.length - 1}>Reculer <Icon name="chevronRight" /></button>
               <button className="st-btn danger" onClick={deletePage} disabled={pages.length <= 1}><Icon name="close" /> Supprimer la page</button>
             </div>
+            <AutoRules page={page} onChange={(auto) => updatePages((ps) => ps.map((p) => (p.id === page.id ? { ...p, auto } : p)))} />
             <EdgePreview page={page} selectedId={selected} onSelect={setSelected} onChange={updatePage} onOpenSettings={setSelected} />
             <p className="st-hint">Glisse un widget pour le déplacer, tire son coin pour le redimensionner, clique pour le régler. Tout est appliqué à l'Edge en direct.</p>
           </main>

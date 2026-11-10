@@ -20,7 +20,12 @@ Application **Tauri 2** (backend Rust + interface React/TypeScript), légère et
 | Page web | Intègre Home Assistant, Grafana, etc. |
 | Applications | Tes logiciels en un toucher, avec leurs vraies icônes (recherche parmi les applis installées ou chemin d'un .exe) |
 | Son | Volume et sourdine de la sortie et du micro, volume de chaque appli |
-| Batteries | Niveau des périphériques sans fil Logitech, via G HUB (interface non officielle) |
+| Batteries | Périphériques sans fil Logitech (G HUB, interface non officielle) et Corsair (SDK iCUE officiel, téléchargé chez Corsair et vérifié) |
+| Réseau | Débit descendant / montant en direct, ping, adresses IP locale et publique |
+| Discord | Couper le micro (état réel, via Windows), sourdine Discord par raccourci, ouvrir Discord |
+| Statut Teams | Voir et changer ta disponibilité Teams (même connexion que l'Agenda) |
+| Home Assistant | Lumières, prises, scènes et capteurs (jeton chiffré par Windows) |
+| Presse-papiers | 15 derniers textes copiés, un toucher pour recoller (jamais écrits sur le disque) |
 | Agenda | Réunions Microsoft 365 / Outlook, prochain rendez-vous, bouton Rejoindre Teams ([mise en route](docs/agenda-microsoft365.md)) |
 
 ## Installer (rien à configurer)
@@ -59,6 +64,12 @@ Clic sur l'icône **Edge Studio** dans la zone de notification (ou bouton **Stud
 - onglets de pages : ajouter, renommer, réordonner, supprimer.
 
 Tout est enregistré et appliqué à l'Edge en direct ; changer de page dans le Studio l'affiche sur l'Edge, et inversement.
+
+**Page automatique** : sous le nom de chaque page, « Afficher automatiquement quand » une appli est au premier plan
+(ex. `cs2`, `teams`, ou « Capturer l'appli active ») ou dès qu'une appli est en plein écran. L'Edge y bascule tout seul
+et revient à la page d'avant quand l'appli n'est plus au premier plan.
+
+**Mode nuit** (Studio → Apparence) : grande horloge discrète ou écran assombri sur une plage horaire ; un toucher réveille l'Edge 5 minutes.
 
 ### Sur l'Edge, au doigt
 
@@ -136,6 +147,9 @@ src-tauri/src/
   user_widgets.rs    widgets perso : liste, création, protocole edgewidget://
   calendar.rs        agenda Microsoft 365 (Graph, connexion par code, jeton chiffré DPAPI)
   taskbar.rs         masquage de la barre des tâches Windows sur l'Edge
+  foreground.rs      appli au premier plan (pages automatiques, retour du focus avant l'envoi de touches)
+  audio.rs apps.rs gpu.rs network.rs clipboard.rs ghub.rs icue.rs homeassistant.rs   sources des widgets
+  secret.rs          chiffrement DPAPI des jetons (Microsoft 365, Home Assistant)
   studio.rs          fenêtre Studio + icône de la zone de notification
 src/studio/          interface du Studio (studio.html)
 src/core/store.ts    configuration partagée + synchronisation Edge ↔ Studio (sync.ts)
