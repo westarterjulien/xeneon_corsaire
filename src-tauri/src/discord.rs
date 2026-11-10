@@ -14,12 +14,13 @@ use std::{
 };
 use tauri::{AppHandle, Manager};
 
-const SCOPES: [&str; 4] = ["rpc", "rpc.voice.read", "rpc.voice.write", "rpc.notifications.read"];
-const NOTIF_SCOPE: &str = "rpc.notifications.read";
-const MAX_NOTIFS: usize = 8;
+const SCOPES: [&str; 5] = ["rpc", "rpc.voice.read", "rpc.voice.write", "rpc.notifications.read", "messages.read"];
+/// Permissions nécessaires pour la liste des conversations (absentes d'une ancienne autorisation).
+const CONV_SCOPES: [&str; 2] = ["rpc.notifications.read", "messages.read"];
+const MAX_CONVS: usize = 12;
 
-/// Message reçu (notification Discord), gardé en mémoire uniquement.
-#[derive(Serialize, Clone, Default)]
+/// Conversation (message privé ou salon), triée par activité. Conservée chiffrée sur le disque.
+#[derive(Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Notif {
     id: u64,
@@ -58,8 +59,71 @@ pub struct DiscordStatus {
     error: Option<String>,
     /// Autorisation à renouveler pour la nouvelle permission « notifications ».
     needs_upgrade: bool,
-    /// Derniers messages reçus, du plus récent au plus ancien.
+    /// Conversations, de la plus récemment active à la plus ancienne.
     messages: Vec<Notif>,
+    /// Identifiant Discord du compte connecté (pour reconnaître tes propres messages).
+    #[serde(skip)]
+    me: Option<String>,
+}
+
+// ---------- Conversations conservées (chiffrées) ----------
+static CONV_PATH: OnceLock<PathBuf> = OnceLock::new();
+static SUBSCRIBED: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
+fn now_ms() -> u64 {
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|t| t.as_millis() as u64).unwrap_or(0)
+}
+
+fn save_convs() {
+    let (Some(p), Some(list)) = (CONV_PATH.get(), STATUS.lock().ok().and_then(|g| g.as_ref().map(|s| s.messages.clone()))) else { return };
+    if let Ok(bytes) = serde_json::to_vec(&list) {
+        if let Ok(enc) = crate::secret::protect(&bytes) {
+            let _ = fs::write(p, enc);
+        }
+    }
+}
+
+fn load_convs() -> Vec<Notif> {
+    CONV_PATH
+        .get()
+        .and_then(|p| fs::read(p).ok())
+        .and_then(|raw| crate::secret::unprotect(&raw).ok())
+        .and_then(|b| serde_json::from_slice(&b).ok())
+        .unwrap_or_default()
+}
+
+/// Met à jour (ou crée) une conversation et la remonte en tête.
+pub fn upsert(channel_id: &str, title: Option<String>, icon: Option<String>, preview: Option<String>, unread: bool, create: bool) -> bool {
+    let mut changed = false;
+    status(|st| {
+        let pos = st.messages.iter().position(|m| m.channel_id == channel_id);
+        if pos.is_none() && !create {
+            return;
+        }
+        let mut c = pos.map(|i| st.messages.remove(i)).unwrap_or_else(|| Notif {
+            id: st.messages.iter().map(|m| m.id).max().unwrap_or(0) + 1,
+            channel_id: channel_id.to_string(),
+            ..Default::default()
+        });
+        if let Some(t) = title.filter(|t| !t.is_empty()) {
+            c.title = t;
+        }
+        if icon.is_some() {
+            c.icon = icon;
+        }
+        if let Some(p) = preview {
+            c.body = p.chars().take(300).collect();
+        }
+        c.at = now_ms();
+        c.unread = unread;
+        st.messages.insert(0, c);
+        st.messages.truncate(MAX_CONVS);
+        changed = true;
+    });
+    if changed {
+        save_convs();
+    }
+    changed
 }
 
 enum Cmd {
@@ -163,6 +227,7 @@ pub fn discord_open(channel_id: String) -> Result<(), String> {
         return Err("conversation invalide".into());
     }
     status(|s| s.messages.iter_mut().filter(|m| m.channel_id == channel_id).for_each(|m| m.unread = false));
+    save_convs();
     send_cmd(Cmd::Open { channel_id })
 }
 
@@ -170,6 +235,7 @@ pub fn discord_open(channel_id: String) -> Result<(), String> {
 #[tauri::command]
 pub fn discord_clear() {
     status(|s| s.messages.clear());
+    save_convs();
 }
 
 #[tauri::command]
@@ -182,6 +248,11 @@ pub fn discord_forget(app: AppHandle) -> Result<(), String> {
 }
 
 pub fn start(app: AppHandle) {
+    if let Ok(dir) = app.path().app_config_dir() {
+        let _ = CONV_PATH.set(dir.join("discord.convs"));
+    }
+    let convs = load_convs();
+    status(|s| s.messages = convs);
     let (tx, rx) = mpsc::channel();
     let _ = TX.set(Mutex::new(tx));
     std::thread::spawn(move || imp::worker(app, rx));
@@ -293,6 +364,7 @@ mod imp {
         match v.get("evt").and_then(Value::as_str) {
             Some("VOICE_SETTINGS_UPDATE") => apply_voice(d),
             Some("NOTIFICATION_CREATE") => push_notif(d),
+            Some("MESSAGE_CREATE") => on_message(d),
             _ => {}
         }
     }
@@ -303,15 +375,33 @@ mod imp {
         if channel_id.is_empty() {
             return;
         }
-        let at = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|t| t.as_millis() as u64).unwrap_or(0);
         let icon = d.get("icon_url").and_then(Value::as_str).filter(|u| u.starts_with("https://")).map(str::to_owned);
-        status(|st| {
-            let id = st.messages.iter().map(|m| m.id).max().unwrap_or(0) + 1;
-            // Une ligne par conversation : le nouveau message remplace l'ancien.
-            st.messages.retain(|m| m.channel_id != channel_id);
-            st.messages.insert(0, Notif { id, channel_id, title: s("title"), body: s("body").chars().take(300).collect(), icon, at, unread: true });
-            st.messages.truncate(MAX_NOTIFS);
-        });
+        // Une ligne par conversation : elle remonte en tête et passe en « non lu ».
+        upsert(&channel_id, Some(s("title")), icon, Some(s("body")), true, true);
+    }
+
+    /// Message dans une conversation suivie (de toi ou de l'autre personne).
+    fn on_message(d: &Value) {
+        let Some(channel_id) = d.get("channel_id").and_then(Value::as_str) else { return };
+        let author = d.pointer("/message/author/id").and_then(Value::as_str).unwrap_or_default();
+        let name = d.pointer("/message/author/username").and_then(Value::as_str).unwrap_or_default();
+        let content = d.pointer("/message/content").and_then(Value::as_str).unwrap_or_default();
+        let me = STATUS.lock().ok().and_then(|g| g.as_ref().and_then(|s| s.me.clone()));
+        let mine = me.as_deref() == Some(author);
+        let preview = if content.is_empty() { None } else if mine { Some(format!("Toi : {content}")) } else { Some(format!("{name} : {content}")) };
+        // Tu as répondu : la conversation est lue. Sinon : non lue.
+        upsert(channel_id, None, None, preview, !mine, false);
+    }
+
+    /// Suit les nouvelles conversations (messages dans les deux sens).
+    fn follow(pipe: &mut Pipe) {
+        let channels: Vec<String> = STATUS.lock().ok().and_then(|g| g.as_ref().map(|s| s.messages.iter().map(|m| m.channel_id.clone()).collect())).unwrap_or_default();
+        for c in channels {
+            let todo = SUBSCRIBED.lock().map(|mut l| if l.contains(&c) { false } else { l.push(c.clone()); true }).unwrap_or(false);
+            if todo {
+                let _ = pipe.request("SUBSCRIBE", json!({ "channel_id": c }), Some("MESSAGE_CREATE"), Duration::from_secs(5));
+            }
+        }
     }
 
     /// Attend une commande de l'interface pendant `d` ; renvoie Reload si demandé.
@@ -352,10 +442,12 @@ mod imp {
 
     /// Nom du compte et permissions réellement accordées (une ancienne autorisation n'a pas les notifications).
     fn on_auth(d: &Value) {
-        let has_notifs = d.get("scopes").and_then(Value::as_array).map(|a| a.iter().any(|x| x.as_str() == Some(NOTIF_SCOPE))).unwrap_or(false);
+        let granted: Vec<&str> = d.get("scopes").and_then(Value::as_array).map(|a| a.iter().filter_map(Value::as_str).collect()).unwrap_or_default();
+        let complete = CONV_SCOPES.iter().all(|s| granted.contains(s));
         status(|s| {
             s.user = d.pointer("/user/username").and_then(Value::as_str).map(str::to_owned);
-            s.needs_upgrade = !has_notifs;
+            s.me = d.pointer("/user/id").and_then(Value::as_str).map(str::to_owned);
+            s.needs_upgrade = !complete;
         });
     }
 
@@ -415,6 +507,9 @@ mod imp {
             }
         }
 
+        if let Ok(mut l) = SUBSCRIBED.lock() {
+            l.clear();
+        }
         let mut authed = authenticate(app, pipe, &mut creds)?;
         status(|s| s.authorized = authed);
         if authed {
@@ -453,6 +548,9 @@ mod imp {
                     }
                     Cmd::Set { .. } => {}
                 }
+            }
+            if authed && !needs_upgrade() {
+                follow(pipe);
             }
             // Évènements de Discord.
             match pipe.try_read()? {

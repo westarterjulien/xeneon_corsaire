@@ -96,20 +96,20 @@ function ago(at: number, now: number) {
   return h < 24 ? `${h} h` : `${Math.round(h / 24)} j`;
 }
 
-/** Derniers messages reçus (notifications Discord) : un toucher ouvre la conversation. */
+/** 3 conversations les plus récentes (point = message non lu) : un toucher ouvre la conversation. */
 function Messages({ st, max }: { st: DiscordStatus; max: number }) {
   const now = useNow(30_000).getTime();
   if (st.needsUpgrade) {
     return (
       <div className="dsc-msgs">
         <button className="dsc-upgrade" onClick={() => bridge.discordAuthorize()}>
-          {st.waiting ? "Accepte la fenêtre dans Discord…" : "Autoriser l'affichage des messages"}
+          {st.waiting ? "Accepte la fenêtre dans Discord…" : "Autoriser la liste des conversations"}
         </button>
       </div>
     );
   }
   const list = st.messages.slice(0, max);
-  if (!list.length) return <div className="dsc-msgs dsc-none">Aucun nouveau message</div>;
+  if (!list.length) return <div className="dsc-msgs dsc-none">Tes conversations apparaîtront ici dès le prochain message échangé.</div>;
   const open = (channelId: string) => {
     void bridge.discordOpen(channelId);
     void bridge.runAction({ kind: "open", target: "discord://" });
@@ -173,7 +173,7 @@ function Direct({ showMessages, rows, cols }: { showMessages: boolean; rows: num
   return (
     <div className={`dsc-split ${side ? "is-side" : ""}`}>
       {buttons}
-      <Messages st={st} max={side ? (rows >= 2 ? 3 : 2) : rows >= 4 ? 3 : 2} />
+      <Messages st={st} max={3} />
     </div>
   );
 }
@@ -217,7 +217,7 @@ export default defineWidget<Settings>({
       ],
     },
     { key: "connection", label: "Connexion à Discord", type: "custom", editor: DiscordConnection },
-    { key: "showMessages", label: "Afficher les derniers messages reçus", type: "boolean", default: true, help: "Messages privés et mentions, selon tes notifications Discord. Affichés sous les boutons (3 cases de haut ou plus) ou à côté (4 cases de large ou plus) ; sinon, un badge compte les nouveaux." },
+    { key: "showMessages", label: "Afficher les 3 conversations les plus récentes", type: "boolean", default: true, help: "Une ligne par conversation, avec un point bleu s'il y a un message non lu (lu dès que tu réponds ou que tu l'ouvres). La liste se constitue au fil de tes échanges et est conservée, chiffrée, sur ton PC. Sous les boutons (3 cases de haut) ou à côté (4 cases de large) ; sinon un badge." },
     { key: "muteKeys", label: "Mode raccourcis : touche « micro » de Discord", type: "text", default: "", placeholder: "vide = couper le micro de Windows" },
     { key: "deafenKeys", label: "Mode raccourcis : touche « sourdine » de Discord", type: "text", default: "ctrl+shift+d" },
   ],
