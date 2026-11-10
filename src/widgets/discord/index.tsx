@@ -132,7 +132,7 @@ function Messages({ st, max }: { st: DiscordStatus; max: number }) {
 }
 
 /** Mode direct : état réel de Discord, synchronisé dans les deux sens. */
-function Direct({ showMessages, rows }: { showMessages: boolean; rows: number }) {
+function Direct({ showMessages, rows, cols }: { showMessages: boolean; rows: number; cols: number }) {
   const { value: st } = useShared<DiscordStatus>("discord", bridge.discordStatus, 700);
   const [local, setLocal] = useState<{ mute?: boolean; deaf?: boolean; at: number } | null>(null);
   if (!st) return null;
@@ -151,9 +151,12 @@ function Direct({ showMessages, rows }: { showMessages: boolean; rows: number })
   const mute = fresh?.mute ?? st.mute;
   const deaf = fresh?.deaf ?? st.deaf;
   const unread = st.messages.filter((m) => m.unread).length;
+  // Large mais peu haut : messages à côté des boutons. Haut : en dessous. Petit : simple badge.
+  const side = showMessages && rows < 3 && cols >= 4;
+  const below = showMessages && rows >= 3;
   const buttons = (
     <Buttons
-      unread={showMessages && rows < 3 ? unread : 0}
+      unread={showMessages && !side && !below ? unread : 0}
       mic={mute || deaf}
       deaf={deaf}
       onMic={() => {
@@ -166,11 +169,11 @@ function Direct({ showMessages, rows }: { showMessages: boolean; rows: number })
       }}
     />
   );
-  if (!showMessages || rows < 3) return buttons;
+  if (!side && !below) return buttons;
   return (
-    <div className="dsc-split">
+    <div className={`dsc-split ${side ? "is-side" : ""}`}>
       {buttons}
-      <Messages st={st} max={rows >= 4 ? 3 : 2} />
+      <Messages st={st} max={side ? (rows >= 2 ? 3 : 2) : rows >= 4 ? 3 : 2} />
     </div>
   );
 }
@@ -214,14 +217,14 @@ export default defineWidget<Settings>({
       ],
     },
     { key: "connection", label: "Connexion à Discord", type: "custom", editor: DiscordConnection },
-    { key: "showMessages", label: "Afficher les derniers messages reçus", type: "boolean", default: true, help: "Messages privés et mentions, selon tes notifications Discord. Visibles quand le widget fait 3 cases de haut ou plus ; sinon, un badge compte les nouveaux." },
+    { key: "showMessages", label: "Afficher les derniers messages reçus", type: "boolean", default: true, help: "Messages privés et mentions, selon tes notifications Discord. Affichés sous les boutons (3 cases de haut ou plus) ou à côté (4 cases de large ou plus) ; sinon, un badge compte les nouveaux." },
     { key: "muteKeys", label: "Mode raccourcis : touche « micro » de Discord", type: "text", default: "", placeholder: "vide = couper le micro de Windows" },
     { key: "deafenKeys", label: "Mode raccourcis : touche « sourdine » de Discord", type: "text", default: "ctrl+shift+d" },
   ],
   component: ({ settings, size }) => (
     <div className="dsc">
       <Kicker>Discord</Kicker>
-      {settings.mode === "keys" ? <Keys s={settings} /> : <Direct showMessages={settings.showMessages !== false} rows={size.h} />}
+      {settings.mode === "keys" ? <Keys s={settings} /> : <Direct showMessages={settings.showMessages !== false} rows={size.h} cols={size.w} />}
     </div>
   ),
 });

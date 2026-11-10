@@ -33,3 +33,9 @@
 .dsc-m-time { font-size: 12px; color: var(--faint); flex-shrink: 0; align-self: flex-start; margin-top: 3px; }
 .dsc-unread { position: absolute; left: -12px; top: 50%; width: 7px; height: 7px; margin-top: -3px; border-radius: 50%; background: #5865f2; box-shadow: 0 0 8px #5865f2; }
 .dsc-upgrade { margin-top: 12px; height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid #5865f2; color: #c9cdfb; font-size: 14px; align-self: flex-start; }
+.dsc-split.is-side { flex-direction: row; align-items: center; gap: 4cqw; }
+.dsc-split.is-side .dsc-btns { flex: 0 0 auto; width: min(44%, 420px); }
+.dsc-split.is-side .dsc-msgs { flex: 1; min-width: 0; border-top: none; border-left: 1px solid var(--line); padding-left: 3cqw; }
+.dsc-split.is-side .dsc-m { padding: 7px 4px; }
+.dsc-split.is-side .dsc-av { width: 32px; height: 32px; }
+.dsc-split.is-side .dsc-unread { left: -9px; }
