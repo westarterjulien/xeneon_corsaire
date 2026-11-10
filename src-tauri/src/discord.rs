@@ -282,8 +282,41 @@ mod imp {
     }
 
     impl Pipe {
-        fn open() -> Option<Pipe> {
-            (0..10).find_map(|i| OpenOptions::new().read(true).write(true).open(format!(r"\\.\pipe\discord-ipc-{i}")).ok()).map(|f| Pipe { f, nonce: 0 })
+        /// Essaie les 10 canaux discord-ipc-N et garde le premier où Discord répond à la poignée de main
+        /// (un autre logiciel peut occuper un canal sans répondre). Err(None) = aucun canal ouvert.
+        fn connect(client_id: &str) -> Result<Pipe, Option<String>> {
+            let mut errors = Vec::new();
+            for i in 0..10 {
+                let Ok(f) = OpenOptions::new().read(true).write(true).open(format!(r"\\?\pipe\discord-ipc-{i}")) else { continue };
+                let mut p = Pipe { f, nonce: 0 };
+                match p.handshake(client_id) {
+                    Ok(()) => return Ok(p),
+                    Err(e) => errors.push(format!("canal {i} : {e}")),
+                }
+            }
+            if errors.is_empty() {
+                Err(None)
+            } else {
+                Err(Some(format!("Discord ne répond pas ({})", errors.join(" ; "))))
+            }
+        }
+
+        /// Poignée de main : Discord répond par l'évènement READY (ou ferme la connexion si l'ID est refusé).
+        fn handshake(&mut self, client_id: &str) -> Result<(), String> {
+            self.write(0, &json!({ "v": 1, "client_id": client_id }))?;
+            let deadline = Instant::now() + Duration::from_secs(4);
+            loop {
+                match self.try_read()? {
+                    Some((2, v)) => return Err(format!("application refusée : {}", v.get("message").and_then(Value::as_str).unwrap_or("vérifie l'Application ID"))),
+                    Some((_, v)) if v.get("evt").and_then(Value::as_str) == Some("READY") => return Ok(()),
+                    Some((op, v)) if v.get("evt").and_then(Value::as_str) == Some("ERROR") => {
+                        return Err(format!("erreur {op} : {}", v.pointer("/data/message").and_then(Value::as_str).unwrap_or("inconnue")))
+                    }
+                    Some(_) => {}
+                    None if Instant::now() > deadline => return Err("pas de réponse".into()),
+                    None => std::thread::sleep(Duration::from_millis(30)),
+                }
+            }
         }
 
         fn write(&mut self, op: u32, payload: &Value) -> Result<(), String> {
@@ -417,13 +450,18 @@ mod imp {
                 continue;
             };
             status(|s| s.configured = true);
-            let Some(mut pipe) = Pipe::open() else {
-                status(|s| {
-                    s.running = false;
-                    s.authorized = false;
-                });
-                idle(&rx, Duration::from_secs(5));
-                continue;
+            let mut pipe = match Pipe::connect(&creds.client_id) {
+                Ok(p) => p,
+                Err(e) => {
+                    status(|s| {
+                        // Aucun canal : Discord fermé. Canaux muets : on l'explique.
+                        s.running = e.is_some();
+                        s.authorized = false;
+                        s.error = e;
+                    });
+                    idle(&rx, Duration::from_secs(5));
+                    continue;
+                }
             };
             status(|s| {
                 s.running = true;
@@ -494,18 +532,7 @@ mod imp {
     }
 
     fn session(app: &AppHandle, pipe: &mut Pipe, rx: &mpsc::Receiver<Cmd>, mut creds: Creds) -> Result<(), String> {
-        // Poignée de main : Discord répond par l'évènement READY.
-        pipe.write(0, &json!({ "v": 1, "client_id": creds.client_id }))?;
-        let deadline = Instant::now() + Duration::from_secs(5);
-        loop {
-            match pipe.try_read()? {
-                Some((2, v)) => return Err(format!("Discord refuse l'application : {}", v.get("message").and_then(Value::as_str).unwrap_or("vérifie l'Application ID"))),
-                Some((_, v)) if v.get("evt").and_then(Value::as_str) == Some("READY") => break,
-                Some(_) => {}
-                None if Instant::now() > deadline => return Err("Discord ne répond pas".into()),
-                None => std::thread::sleep(Duration::from_millis(30)),
-            }
-        }
+        // Poignée de main déjà faite par Pipe::connect.
 
         if let Ok(mut l) = SUBSCRIBED.lock() {
             l.clear();
