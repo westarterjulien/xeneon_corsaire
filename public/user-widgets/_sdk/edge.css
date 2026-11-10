@@ -1,0 +1,29 @@
+/* Edge Studio — styles de base « Épure » pour les widgets perso. */
+@font-face { font-family: "Inter Variable"; font-style: normal; font-display: swap; font-weight: 100 900; src: url("inter.woff2") format("woff2-variations"); }
+:root {
+  --bg: #07090c; --accent: #a9c4ff; --text: #eef2f7;
+  --muted: rgba(238, 242, 247, .55); --faint: rgba(238, 242, 247, .42);
+  --line: rgba(255, 255, 255, .07); --track: rgba(255, 255, 255, .08);
+  color-scheme: dark;
+  font-family: "Inter Variable", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-feature-settings: "tnum", "cv11"; color: var(--text); -webkit-font-smoothing: antialiased;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; user-select: none; -webkit-user-select: none; }
+/* Le body est un conteneur : utiliser cqw / cqh pour que le widget s'adapte à sa taille. */
+body { container-type: size; padding: 0 28px; display: flex; flex-direction: column; justify-content: center; }
+button { font: inherit; color: inherit; background: none; border: none; padding: 0; cursor: pointer; touch-action: manipulation; }
+
+.kicker { font-size: 15px; letter-spacing: .22em; text-transform: uppercase; color: var(--faint); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.thin { font-weight: 200; letter-spacing: -.03em; line-height: .9; }
+.muted { color: var(--muted); font-weight: 300; }
+.faint { color: var(--faint); }
+.accent { color: var(--accent); }
+
+.btn { min-height: 52px; padding: 0 26px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .025); font-size: 18px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+.btn:active { background: rgba(255, 255, 255, .08); }
+.btn.primary { background: var(--text); color: var(--bg); border-color: transparent; font-weight: 600; }
+.btn.round { width: 64px; height: 64px; padding: 0; border-radius: 50%; }
+.row { display: flex; align-items: center; gap: 16px; }
+.track { height: 3px; border-radius: 3px; background: var(--track); overflow: hidden; }
+.track > i { display: block; height: 100%; background: var(--accent); border-radius: 3px; transition: width .6s ease; }

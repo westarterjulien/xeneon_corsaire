@@ -1,0 +1,87 @@
+/* Studio : fenêtre de bureau (souris), même direction « Épure » que l'Edge. */
+#root:has(.studio) { overflow: hidden; }
+.studio {
+  height: 100vh; display: grid; grid-template-columns: 300px minmax(0, 1fr) 420px; grid-template-rows: 64px minmax(0, 1fr);
+  grid-template-areas: "top top top" "left center right";
+  background: radial-gradient(1200px 600px at 60% 120%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%), #07090c;
+  color: var(--text); user-select: none;
+}
+.studio button { cursor: pointer; }
+.studio button:disabled { opacity: .35; cursor: default; }
+.studio .kicker { font-size: 12px; }
+.st-help { margin: 6px 0 18px; color: var(--faint); font-size: 13px; font-weight: 300; line-height: 1.45; }
+
+/* Barre du haut */
+.st-top { grid-area: top; display: flex; align-items: center; gap: 28px; padding: 0 20px; border-bottom: 1px solid var(--line); }
+.st-brand { display: flex; align-items: center; gap: 12px; font-weight: 500; font-size: 15px; letter-spacing: .02em; white-space: nowrap; }
+.st-logo { width: 26px; height: 10px; border-radius: 3px; border: 1.5px solid var(--accent); }
+.st-tabs { display: flex; gap: 4px; flex: 1; min-width: 0; overflow-x: auto; }
+.st-tab { height: 34px; padding: 0 16px; border-radius: 999px; font-size: 14px; color: var(--muted); white-space: nowrap; }
+.st-tab:hover { color: var(--text); background: var(--hover); }
+.st-tab.is-active { background: var(--text); color: var(--bg); font-weight: 600; }
+.st-tab-add { width: 34px; padding: 0; display: grid; place-items: center; }
+.st-status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--faint); white-space: nowrap; }
+.st-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, .25); }
+.st-dot.is-on { background: #7ee0a1; box-shadow: 0 0 8px rgba(126, 224, 161, .6); }
+
+/* Colonnes latérales */
+.st-left, .st-right { overflow-y: auto; padding: 22px 20px 32px; }
+.st-left { grid-area: left; border-right: 1px solid var(--line); }
+.st-right { grid-area: right; border-left: 1px solid var(--line); }
+.st-left .palette-section { margin: 22px 0 10px; font-size: 11px; }
+.st-left .palette-section:first-of-type { margin-top: 4px; }
+.palette.is-compact { grid-template-columns: 1fr; border: none; }
+.palette.is-compact .palette-item { flex-direction: row; align-items: center; gap: 12px; padding: 10px 10px; border: none; border-radius: 12px; }
+.palette.is-compact .palette-item:hover { background: var(--hover); }
+.palette.is-compact .palette-icon { font-size: 20px; margin: 0; width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .1); display: grid; place-items: center; flex-shrink: 0; }
+.palette.is-compact .palette-name { font-size: 14px; }
+.palette.is-compact .palette-desc { display: none; }
+.palette.is-compact .palette-size { position: static; margin-left: auto; font-size: 11px; }
+.st-left .palette-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.st-left .link-btn { font-size: 13px; padding: 7px 12px; }
+.st-left .palette-note, .st-left .palette-empty { font-size: 12px; }
+
+/* Centre : aperçu */
+.st-center { grid-area: center; display: flex; flex-direction: column; padding: 22px 28px; min-width: 0; overflow-y: auto; }
+.st-pagebar { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+.st-pagename { background: transparent; border: none; border-bottom: 1px solid transparent; font-size: 26px; font-weight: 300; letter-spacing: -.02em; padding: 4px 0; width: 280px; outline: none; color: var(--text); }
+.st-pagename:hover, .st-pagename:focus { border-bottom-color: rgba(255, 255, 255, .2); }
+.st-pagecount { color: var(--faint); font-size: 13px; }
+.st-spacer { flex: 1; }
+.st-btn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .12); font-size: 13px; color: var(--text); white-space: nowrap; }
+.st-btn:hover:not(:disabled) { background: var(--hover); }
+.st-btn.danger { color: var(--danger); }
+.st-screen { position: relative; width: 100%; aspect-ratio: 2560 / 720; border-radius: 12px; overflow: hidden; box-shadow: 0 0 0 8px #000, 0 0 0 9px rgba(255, 255, 255, .08), 0 30px 80px rgba(0, 0, 0, .6); margin: 8px 0; flex-shrink: 0; }
+.st-canvas { position: absolute !important; top: 0; left: 0; width: 2560px !important; height: 720px !important; transform-origin: 0 0; }
+.st-hint { color: var(--faint); font-size: 13px; text-align: center; margin-top: 22px; font-weight: 300; }
+
+/* Commandes d'édition lisibles malgré la réduction de l'aperçu */
+.st-canvas .widget-edit-actions { transform: scale(var(--inv)); transform-origin: top right; }
+.st-canvas .widget-edit-name { transform: scale(var(--inv)); transform-origin: bottom left; }
+.st-canvas .widget-resize { transform: scale(var(--inv)); transform-origin: bottom right; }
+.st-canvas .widget-edit { border-width: calc(1px * var(--inv)); cursor: grab; }
+.st-canvas .widget.is-selected .widget-edit { border: calc(2px * var(--inv)) solid var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.st-canvas .is-editing .widget-inner { opacity: .8; }
+.st-canvas .icon-btn:hover { background: rgba(255, 255, 255, .12); }
+
+/* Panneau de droite */
+.st-panel-head { display: flex; align-items: center; gap: 14px; }
+.st-panel-icon { width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .14); display: grid; place-items: center; font-size: 20px; color: var(--accent); flex-shrink: 0; }
+.st-panel-title { font-size: 20px; font-weight: 400; }
+.st-panel-sub { font-size: 12px; color: var(--faint); margin-top: 2px; letter-spacing: .04em; }
+.st-panel-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0 22px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+.st-right .form { grid-template-columns: 1fr; gap: 18px; }
+.st-right .form input[type="text"], .st-right .form input[type="number"], .st-right .form select { font-size: 15px; }
+.st-right .sce { grid-template-columns: 1fr; gap: 18px; }
+.st-right .icon-picker { grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); }
+.st-right .icon-pick { height: 40px; font-size: 18px; }
+.st-right .segmented button { height: 34px; font-size: 13px; }
+.st-right .keyrec-key { min-width: 120px; height: 36px; font-size: 14px; }
+.st-right .chip { padding: 7px 12px; font-size: 13px; }
+.st-right .sce-label { font-size: 18px !important; }
+.st-right .city-result { font-size: 15px; padding: 10px 4px; }
+.studio .toast { position: fixed; }
+
+@media (max-width: 1280px) {
+  .studio { grid-template-columns: 240px minmax(0, 1fr) 340px; }
+}

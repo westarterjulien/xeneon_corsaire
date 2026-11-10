@@ -1,0 +1,10 @@
+{
+  "name": "{{NAME}}",
+  "description": "Mon widget perso.",
+  "icon": "zap",
+  "defaultSize": { "w": 3, "h": 2 },
+  "minSize": { "w": 2, "h": 1 },
+  "settings": [
+    { "key": "title", "label": "Titre", "type": "text", "default": "{{NAME}}" }
+  ]
+}

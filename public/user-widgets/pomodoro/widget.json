@@ -1,0 +1,11 @@
+{
+  "name": "Pomodoro",
+  "description": "Minuteur concentration / pause. Exemple de widget perso.",
+  "icon": "clock",
+  "defaultSize": { "w": 3, "h": 2 },
+  "minSize": { "w": 2, "h": 1 },
+  "settings": [
+    { "key": "focus", "label": "Concentration (min)", "type": "number", "default": 25, "min": 1, "max": 120 },
+    { "key": "pause", "label": "Pause (min)", "type": "number", "default": 5, "min": 1, "max": 60 }
+  ]
+}

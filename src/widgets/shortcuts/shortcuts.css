@@ -1,0 +1,14 @@
+.sc { height: 100%; display: flex; flex-direction: column; padding: 0 28px; }
+.sc .kicker { margin-bottom: 3cqh; }
+.sc-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(var(--cols), 1fr); grid-template-rows: repeat(var(--rows), 1fr); gap: 2cqh 12px; align-content: center; }
+.sc-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; min-width: 0; min-height: 0; }
+.sc-circle {
+  --s: min(112px, calc((100cqw - 56px) / var(--cols) - 16px), calc((100cqh - 70px) / var(--rows) - 46px));
+  width: var(--s); height: var(--s); flex-shrink: 0; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .12); background: rgba(255, 255, 255, .025);
+  display: grid; place-items: center; font-size: calc(var(--s) * .32); color: var(--text); font-weight: 300; transition: background .2s, color .2s, transform .1s;
+}
+.sc-btn:active .sc-circle { transform: scale(.94); background: rgba(255, 255, 255, .08); }
+.sc-btn.is-ok .sc-circle { background: var(--text); color: var(--bg); border-color: transparent; }
+.sc-btn.is-err .sc-circle { border-color: var(--danger); color: var(--danger); }
+.sc-label { font-size: clamp(12px, 2.4cqh, 16px); color: rgba(238, 242, 247, .6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+@container (max-height: 220px) { .sc .kicker, .sc-label { display: none; } }

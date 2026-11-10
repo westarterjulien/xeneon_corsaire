@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <!-- Styles « Épure » et API Edge (réglages, données système, média, actions). -->
+  <link rel="stylesheet" href="../_sdk/edge.css" />
+  <script src="../_sdk/edge.js"></script>
+  <style>
+    /* cqh / cqw = % de la hauteur / largeur du widget : le texte suit le redimensionnement. */
+    .value { font-size: min(46cqh, 30cqw); margin-top: 2cqh; }
+  </style>
+</head>
+<body>
+  <div class="kicker" id="title"></div>
+  <div class="thin value"><span id="cpu">—</span><span class="faint" style="font-size:.4em"> %</span></div>
+  <div class="muted">Charge CPU</div>
+  <script>
+    // Modifie ce fichier et enregistre : le widget se recharge tout seul sur l'Edge.
+    Edge.on("settings", (s) => (document.getElementById("title").textContent = s.title || ""));
+    Edge.on("system", (s) => (document.getElementById("cpu").textContent = Math.round(s.cpu)));
+    // Exemples d'actions : Edge.open("https://…"), Edge.keys("ctrl+shift+m"), Edge.media("play_pause")
+  </script>
+</body>
+</html>

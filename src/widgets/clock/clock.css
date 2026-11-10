@@ -1,0 +1,5 @@
+.clock { height: 100%; display: flex; flex-direction: column; justify-content: center; padding: 0 28px; }
+.clock-time { font-size: min(56cqh, 36cqw); font-weight: 200; letter-spacing: -.055em; line-height: .86; margin: 2.5cqh 0 0 -.04em; white-space: nowrap; }
+.clock.has-seconds .clock-time { font-size: min(52cqh, 21cqw); }
+.clock-date { font-size: clamp(15px, 9cqh, 30px); font-weight: 300; color: rgba(238, 242, 247, .62); margin-top: 4cqh; text-transform: capitalize; white-space: nowrap; }
+@container (max-height: 200px) { .clock .kicker, .clock-date { display: none; } .clock-time { margin-top: 0; } }

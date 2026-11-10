@@ -1,0 +1,10 @@
+.wx { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; gap: 7cqh; padding: 0 28px 4cqh; }
+.wx-empty { justify-content: center; color: var(--faint); font-weight: 300; }
+.wx-now { display: flex; align-items: center; gap: 22px; }
+.wx-icon { width: min(19cqh, 11cqw) !important; height: min(19cqh, 11cqw) !important; color: var(--accent); stroke-width: 1.2; }
+.wx-temp { font-size: min(19cqh, 11cqw); font-weight: 200; line-height: 1; letter-spacing: -.03em; }
+.wx-label { font-size: clamp(13px, 5.6cqh, 20px); color: var(--muted); line-height: 1.4; font-weight: 300; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wx-hours { display: flex; gap: 30px; font-size: clamp(12px, 5.3cqh, 18px); color: rgba(238, 242, 247, .5); }
+.wx-hour b { display: block; color: var(--text); font-weight: 400; font-size: clamp(14px, 6.5cqh, 22px); margin-top: 4px; }
+@container (max-height: 220px) { .wx-hours { display: none; } .wx { justify-content: center; padding-bottom: 0; } }
+@container (max-width: 420px) { .wx-label { display: none; } }

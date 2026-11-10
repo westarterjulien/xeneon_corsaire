@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Directions visuelles Edge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;600&family=DM+Sans:opsz,wght@9..40,500;9..40,700;9..40,800&display=swap" rel="stylesheet" />
+<style>
+  /* ---------- Page de présentation ---------- */
+  :root { --page-bg: #f4f4f5; --page-text: #18181b; --page-muted: #71717a; --page-line: #e4e4e7; --bezel: #0c0c0d; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page-bg: #09090b; --page-text: #f4f4f5; --page-muted: #a1a1aa; --page-line: #27272a; --bezel: #000; } }
+  :root[data-theme="dark"] { --page-bg: #09090b; --page-text: #f4f4f5; --page-muted: #a1a1aa; --page-line: #27272a; --bezel: #000; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page-bg); color: var(--page-text); font-family: Inter, system-ui, sans-serif; padding: 40px 16px 64px; }
+  .page { max-width: 1440px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+  header h1 { margin: 0 0 8px; font-size: 28px; font-weight: 600; letter-spacing: -.02em; }
+  header p { margin: 0; color: var(--page-muted); max-width: 720px; line-height: 1.55; }
+  .dir-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+  .dir-letter { font-weight: 600; font-size: 13px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--page-line); color: var(--page-muted); }
+  .dir-head h2 { margin: 0; font-size: 22px; font-weight: 600; }
+  .dir-desc { margin: 0 0 18px; color: var(--page-muted); line-height: 1.55; max-width: 900px; }
+  .bezel { background: var(--bezel); border-radius: 16px; padding: 9px; box-shadow: 0 24px 70px rgba(0,0,0,.28); }
+  .screen { position: relative; width: 100%; aspect-ratio: 2560 / 720; overflow: hidden; border-radius: 7px; background: #000; }
+  .canvas { position: absolute; top: 0; left: 0; width: 2560px; height: 720px; transform-origin: 0 0; overflow: hidden; }
+  svg.i { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  svg.f { fill: currentColor; stroke: none; }
+
+  /* =========================================================
+     A · ÉPURE — calme, typographique, sans cartes
+     ========================================================= */
+  .a { font-family: Inter, sans-serif; color: #eef2f7; padding: 64px 72px;
+       background: radial-gradient(900px 500px at 75% 120%, rgba(110,150,255,.16), transparent 70%), radial-gradient(700px 420px at 10% -20%, rgba(160,200,255,.08), transparent 70%), #07090c;
+       display: grid; grid-template-columns: 560px 600px 820px 1fr; }
+  .a-col { padding: 0 64px; border-left: 1px solid rgba(255,255,255,.07); display: flex; flex-direction: column; }
+  .a-col:first-child { padding-left: 0; border-left: none; }
+  .a-col:last-child { padding-right: 0; }
+  .a-kicker { font-size: 15px; letter-spacing: .22em; text-transform: uppercase; color: rgba(238,242,247,.42); font-weight: 500; }
+  .a-time { font-size: 232px; font-weight: 200; letter-spacing: -.055em; line-height: .86; margin-top: 18px; font-variant-numeric: tabular-nums; }
+  .a-date { font-size: 30px; font-weight: 300; color: rgba(238,242,247,.62); margin-top: 18px; text-transform: capitalize; }
+  .a-wx { margin-top: auto; display: flex; align-items: center; gap: 22px; }
+  .a-wx svg { font-size: 64px; stroke-width: 1.2; color: #a9c4ff; }
+  .a-wx-t { font-size: 64px; font-weight: 200; line-height: 1; }
+  .a-wx-l { font-size: 20px; color: rgba(238,242,247,.55); line-height: 1.4; }
+  .a-hours { display: flex; gap: 30px; margin-top: 26px; font-size: 18px; color: rgba(238,242,247,.5); }
+  .a-hours b { display: block; color: #eef2f7; font-weight: 400; font-size: 22px; margin-top: 4px; }
+  .a-rings { display: flex; justify-content: space-between; margin-top: 40px; }
+  .a-ring { position: relative; width: 150px; text-align: center; }
+  .a-ring svg { width: 150px; height: 150px; transform: rotate(-90deg); }
+  .a-ring-v { position: absolute; top: 0; left: 0; width: 150px; height: 150px; display: grid; place-items: center; font-size: 46px; font-weight: 200; }
+  .a-ring-v small { font-size: 18px; color: rgba(238,242,247,.5); margin-left: 2px; }
+  .a-ring-l { font-size: 15px; letter-spacing: .2em; color: rgba(238,242,247,.5); margin-top: 16px; }
+  .a-ring-s { font-size: 19px; color: rgba(238,242,247,.82); margin-top: 6px; font-weight: 300; }
+  .a-spark { margin-top: auto; }
+  .a-spark-l { display: flex; justify-content: space-between; font-size: 15px; color: rgba(238,242,247,.42); margin-bottom: 10px; letter-spacing: .05em; }
+  .a-media { display: flex; gap: 44px; align-items: center; height: 100%; }
+  .a-art { width: 300px; height: 300px; border-radius: 28px; flex-shrink: 0; box-shadow: 0 30px 60px rgba(0,0,0,.5);
+           background: radial-gradient(circle at 30% 30%, #ff9a8b 0, transparent 45%), radial-gradient(circle at 75% 70%, #6a5cff 0, transparent 55%), linear-gradient(135deg, #2b1055, #7597de); }
+  .a-m { flex: 1; min-width: 0; }
+  .a-title { font-size: 46px; font-weight: 500; letter-spacing: -.02em; margin-top: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .a-artist { font-size: 25px; color: rgba(238,242,247,.55); margin-top: 6px; font-weight: 300; }
+  .a-prog { margin-top: 38px; height: 3px; background: rgba(255,255,255,.12); border-radius: 3px; position: relative; }
+  .a-prog > i { position: absolute; left: 0; top: 0; bottom: 0; width: 34%; background: #eef2f7; border-radius: 3px; }
+  .a-prog > i::after { content: ""; position: absolute; right: -7px; top: -5.5px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+  .a-times { display: flex; justify-content: space-between; font-size: 16px; color: rgba(238,242,247,.45); margin-top: 12px; font-variant-numeric: tabular-nums; }
+  .a-ctrl { display: flex; align-items: center; gap: 44px; margin-top: 26px; font-size: 34px; color: rgba(238,242,247,.8); }
+  .a-play { width: 92px; height: 92px; border-radius: 50%; background: #eef2f7; color: #07090c; display: grid; place-items: center; font-size: 34px; }
+  .a-vol { margin-left: auto; font-size: 28px; color: rgba(238,242,247,.45); }
+  .a-keys { display: grid; grid-template-columns: repeat(2, 1fr); gap: 26px 20px; margin-top: 30px; }
+  .a-key { display: flex; flex-direction: column; align-items: center; gap: 12px; font-size: 16px; color: rgba(238,242,247,.6); }
+  .a-key span { width: 104px; height: 104px; border-radius: 50%; border: 1px solid rgba(255,255,255,.12); display: grid; place-items: center; font-size: 34px; color: #eef2f7; background: rgba(255,255,255,.025); }
+  .a-key.on span { background: #eef2f7; color: #07090c; border-color: transparent; }
+
+  /* =========================================================
+     B · COCKPIT — HUD gaming, néon, données denses
+     ========================================================= */
+  .b { --c: #26e7ff; --m: #ff3d8b; --y: #ffb020; font-family: Rajdhani, sans-serif; color: #d9f6ff; padding: 18px 24px 24px;
+       background: linear-gradient(rgba(38,231,255,.035) 1px, transparent 1px) 0 0 / 40px 40px, linear-gradient(90deg, rgba(38,231,255,.035) 1px, transparent 1px) 0 0 / 40px 40px, radial-gradient(1200px 500px at 50% 120%, rgba(38,231,255,.12), transparent 70%), #03060a;
+       display: flex; flex-direction: column; gap: 16px; }
+  .b::after { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px); }
+  .b-bar { height: 40px; display: flex; align-items: center; gap: 28px; font-family: "JetBrains Mono", monospace; font-size: 16px; color: rgba(217,246,255,.6); letter-spacing: .06em; border-bottom: 1px solid rgba(38,231,255,.18); }
+  .b-bar .brand { color: var(--c); font-weight: 600; }
+  .b-bar .live { color: var(--m); }
+  .b-bar .sp { flex: 1; }
+  .b-grid { flex: 1; display: grid; grid-template-columns: 500px 500px 420px 560px 1fr; gap: 16px; min-height: 0; }
+  .b-p { position: relative; padding: 22px 26px; background: linear-gradient(160deg, rgba(38,231,255,.07), rgba(38,231,255,.015) 60%); border: 1px solid rgba(38,231,255,.22);
+         clip-path: polygon(0 0, calc(100% - 26px) 0, 100% 26px, 100% 100%, 26px 100%, 0 calc(100% - 26px)); display: flex; flex-direction: column; }
+  .b-p::before { content: ""; position: absolute; top: 0; right: 0; width: 26px; height: 26px; background: linear-gradient(225deg, var(--c) 50%, transparent 50%); opacity: .8; }
+  .b-h { display: flex; justify-content: space-between; align-items: center; font-family: "JetBrains Mono", monospace; font-size: 15px; letter-spacing: .12em; color: rgba(217,246,255,.55); }
+  .b-h b { color: var(--c); font-weight: 600; }
+  .b-big { display: flex; align-items: flex-end; gap: 18px; margin-top: 10px; }
+  .b-num { font-size: 150px; font-weight: 700; line-height: .8; letter-spacing: -.02em; color: #fff; text-shadow: 0 0 24px rgba(38,231,255,.45); }
+  .b-num small { font-size: 50px; color: var(--c); margin-left: 4px; }
+  .b-side { font-size: 22px; line-height: 1.25; color: rgba(217,246,255,.7); padding-bottom: 6px; }
+  .b-side .hot { color: var(--y); font-weight: 700; font-size: 34px; }
+  .b-seg { display: flex; gap: 4px; height: 22px; margin-top: 26px; }
+  .b-seg i { flex: 1; background: rgba(38,231,255,.12); transform: skewX(-18deg); }
+  .b-seg i.on { background: var(--c); box-shadow: 0 0 8px rgba(38,231,255,.6); }
+  .b-seg i.on.w { background: var(--y); box-shadow: 0 0 8px rgba(255,176,32,.6); }
+  .b-seg i.on.h { background: var(--m); box-shadow: 0 0 8px rgba(255,61,139,.6); }
+  .b-cores { display: flex; gap: 6px; align-items: flex-end; height: 120px; margin-top: auto; }
+  .b-cores i { flex: 1; background: linear-gradient(to top, var(--c), rgba(38,231,255,.25)); }
+  .b-meta { display: flex; justify-content: space-between; font-family: "JetBrains Mono", monospace; font-size: 15px; color: rgba(217,246,255,.55); margin-top: 14px; }
+  .b-meta b { color: #fff; font-weight: 600; }
+  .b-fps { text-align: center; justify-content: center; align-items: center; }
+  .b-fps .b-num { font-size: 230px; color: var(--c); text-shadow: 0 0 40px rgba(38,231,255,.55); }
+  .b-fps-l { font-family: "JetBrains Mono", monospace; letter-spacing: .3em; color: rgba(217,246,255,.6); font-size: 17px; margin-top: 14px; }
+  .b-fps svg { width: 100%; height: 90px; margin-top: 26px; }
+  .b-media { flex-direction: row; gap: 24px; align-items: stretch; }
+  .b-art { width: 190px; flex-shrink: 0; clip-path: polygon(0 0, 100% 0, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+           background: linear-gradient(135deg, rgba(255,61,139,.85), rgba(38,231,255,.6)), repeating-linear-gradient(45deg, #000 0 6px, #111 6px 12px); height: 190px; }
+  .b-mm { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .b-title { font-size: 38px; font-weight: 700; text-transform: uppercase; line-height: 1; margin-top: 10px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .b-artist { font-size: 22px; color: var(--m); letter-spacing: .08em; text-transform: uppercase; margin-top: 6px; }
+  .b-viz { display: flex; gap: 4px; align-items: flex-end; height: 110px; margin-top: auto; }
+  .b-viz i { flex: 1; background: linear-gradient(to top, var(--m), var(--c)); opacity: .85; transition: height .18s; }
+  .b-mc { display: flex; gap: 10px; margin-top: 16px; }
+  .b-btn { height: 64px; flex: 1; display: grid; place-items: center; font-size: 28px; border: 1px solid rgba(38,231,255,.35); color: var(--c); clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%); background: rgba(38,231,255,.06); }
+  .b-btn.pri { background: var(--c); color: #03060a; }
+  .b-macros { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 12px; flex: 1; margin-top: 16px; }
+  .b-mac { border: 1px solid rgba(38,231,255,.28); background: rgba(38,231,255,.05); display: flex; flex-direction: column; justify-content: space-between; padding: 14px 16px; clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%); }
+  .b-mac svg { font-size: 30px; color: var(--c); }
+  .b-mac span { font-size: 21px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .b-mac em { font-style: normal; font-family: "JetBrains Mono", monospace; font-size: 13px; color: rgba(217,246,255,.45); }
+  .b-mac.alert { border-color: var(--m); background: rgba(255,61,139,.14); }
+  .b-mac.alert svg { color: var(--m); }
+
+  /* =========================================================
+     C · BENTO — tuiles colorées, rondes, joyeuses
+     ========================================================= */
+  .c { font-family: "DM Sans", sans-serif; color: #111; padding: 20px; background: #0f0f10; display: grid; grid-template-columns: 470px 400px 660px 520px 1fr; gap: 16px; }
+  .c-t { border-radius: 40px; padding: 34px 36px; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+  .c-clock { background: #ff7a45; }
+  .c-clock .k { font-size: 20px; font-weight: 700; opacity: .65; text-transform: uppercase; letter-spacing: .08em; }
+  .c-clock .t { font-size: 172px; font-weight: 800; letter-spacing: -.06em; line-height: .85; margin-top: auto; font-variant-numeric: tabular-nums; }
+  .c-clock .d { font-size: 30px; font-weight: 700; margin-top: 14px; text-transform: capitalize; }
+  .c-wx { background: linear-gradient(160deg, #3f7bff, #8fc3ff); color: #fff; }
+  .c-wx .ic { font-size: 120px; stroke-width: 1.6; }
+  .c-wx .t { font-size: 120px; font-weight: 800; letter-spacing: -.05em; line-height: .9; margin-top: 10px; }
+  .c-wx .l { font-size: 24px; font-weight: 500; opacity: .9; }
+  .c-wx .hrs { margin-top: auto; display: flex; justify-content: space-between; background: rgba(255,255,255,.18); border-radius: 22px; padding: 14px 18px; font-size: 18px; text-align: center; }
+  .c-wx .hrs b { display: block; font-size: 24px; }
+  .c-media { background: linear-gradient(150deg, #7b2ff7, #f107a3); color: #fff; flex-direction: row; gap: 32px; align-items: center; }
+  .c-art { width: 240px; height: 240px; border-radius: 30px; flex-shrink: 0; background: radial-gradient(circle at 30% 35%, #ffd166 0 18%, transparent 19%), radial-gradient(circle at 70% 65%, #06d6a0 0 24%, transparent 25%), #2a0a4a; box-shadow: 0 24px 50px rgba(40,0,60,.45); }
+  .c-mm { flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100%; justify-content: center; }
+  .c-src { font-size: 18px; font-weight: 700; opacity: .75; text-transform: uppercase; letter-spacing: .08em; }
+  .c-title { font-size: 46px; font-weight: 800; letter-spacing: -.03em; line-height: 1; margin-top: 12px; }
+  .c-artist { font-size: 24px; opacity: .8; margin-top: 8px; font-weight: 500; }
+  .c-prog { height: 10px; border-radius: 10px; background: rgba(255,255,255,.25); margin-top: 30px; overflow: hidden; }
+  .c-prog i { display: block; height: 100%; width: 34%; background: #fff; border-radius: 10px; }
+  .c-ctrl { display: flex; gap: 14px; margin-top: 28px; }
+  .c-ctrl span { width: 78px; height: 78px; border-radius: 26px; background: rgba(255,255,255,.2); display: grid; place-items: center; font-size: 30px; }
+  .c-ctrl span.p { background: #fff; color: #b0128f; width: 110px; }
+  .c-sys { background: #1d1d20; color: #fff; gap: 26px; }
+  .c-sys .k { font-size: 20px; font-weight: 700; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .08em; }
+  .c-row { display: flex; flex-direction: column; gap: 10px; }
+  .c-row .top { display: flex; justify-content: space-between; align-items: baseline; }
+  .c-row .n { font-size: 56px; font-weight: 800; letter-spacing: -.04em; line-height: 1; }
+  .c-row .lab { font-size: 22px; font-weight: 700; }
+  .c-row .chip { font-size: 17px; font-weight: 700; padding: 4px 12px; border-radius: 99px; background: rgba(255,255,255,.1); margin-left: 10px; }
+  .c-pill { height: 26px; border-radius: 26px; background: rgba(255,255,255,.08); overflow: hidden; }
+  .c-pill i { display: block; height: 100%; border-radius: 26px; }
+  .c-keys { background: #f4efe6; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 16px; padding: 24px; }
+  .c-key { border-radius: 30px; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; font-weight: 700; font-size: 20px; }
+  .c-key svg { font-size: 40px; stroke-width: 2.2; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></symbol>
+  <symbol id="pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/></symbol>
+  <symbol id="next" viewBox="0 0 24 24"><path d="M5 5l10 7-10 7z"/><rect x="16.5" y="5" width="2.5" height="14" rx="1"/></symbol>
+  <symbol id="prev" viewBox="0 0 24 24"><path d="M19 5L9 12l10 7z"/><rect x="5" y="5" width="2.5" height="14" rx="1"/></symbol>
+  <symbol id="vol" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></symbol>
+  <symbol id="mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+  <symbol id="micoff" viewBox="0 0 24 24"><path d="M15 10V6a3 3 0 0 0-5.7-1.3M9 9v2a3 3 0 0 0 5 2.2M5 11a7 7 0 0 0 11.5 5.4M19 11a7 7 0 0 1-.6 2.8M12 18v3M3 3l18 18"/></symbol>
+  <symbol id="cam" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="folder" viewBox="0 0 24 24"><path d="M3 6.5h6l2 2h10V19H3z"/></symbol>
+  <symbol id="globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3.2 3.3 3.2 14.7 0 18M12 3c-3.2 3.3-3.2 14.7 0 18"/></symbol>
+  <symbol id="chat" viewBox="0 0 24 24"><path d="M4 5h16v11H10l-6 4z"/><path d="M8.5 10.5h.01M12 10.5h.01M15.5 10.5h.01"/></symbol>
+  <symbol id="calc" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8.5 7.5h7M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 16h.01M12 16h.01M15.5 16h.01"/></symbol>
+  <symbol id="rec" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4" fill="currentColor"/></symbol>
+  <symbol id="clip" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z"/></symbol>
+  <symbol id="layers" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></symbol>
+  <symbol id="rain" viewBox="0 0 24 24"><path d="M7 15a4 4 0 1 1 .9-7.9A5.5 5.5 0 0 1 18.4 9 3.5 3.5 0 0 1 17.5 16H7"/><path d="M8.5 18.5l-1 2M12.5 18.5l-1 2M16.5 18.5l-1 2"/></symbol>
+  <symbol id="cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 1 1 .9-7.9A5.5 5.5 0 0 1 18.4 12 3.5 3.5 0 0 1 17.5 19H7"/></symbol>
+</svg>
+
+<div class="page">
+  <header>
+    <h1>Trois directions visuelles</h1>
+    <p>Même contenu, trois styles : horloge, météo, système, lecture en cours et raccourcis. Ce sont des maquettes figées, à l'échelle réelle de l'écran (2560×720) et réduites pour tenir dans la page. Choisis-en une, ou dis-moi ce que tu prendrais dans chacune.</p>
+  </header>
+
+  <section>
+    <div class="dir-head"><span class="dir-letter">A</span><h2>Épure</h2></div>
+    <p class="dir-desc">Calme et premium. Pas de cartes : de la grande typographie fine, des filets, une seule couleur d'accent. Parfait sous un écran principal sans voler l'attention.</p>
+    <div class="bezel"><div class="screen"><div class="canvas a">
+      <div class="a-col">
+        <div class="a-kicker">Paris</div>
+        <div class="a-time" data-clock>17:42</div>
+        <div class="a-date" data-date>mardi 10 novembre</div>
+        <div class="a-wx">
+          <svg class="i"><use href="#rain"/></svg>
+          <div><div class="a-wx-t">13°</div></div>
+          <div class="a-wx-l">Pluie faible<br>ressenti 11° · vent 6 km/h</div>
+        </div>
+        <div class="a-hours"><div>18h<b>13°</b></div><div>19h<b>12°</b></div><div>20h<b>12°</b></div><div>21h<b>11°</b></div><div>22h<b>10°</b></div></div>
+      </div>
+      <div class="a-col">
+        <div class="a-kicker">Système</div>
+        <div class="a-rings">
+          <div class="a-ring"><svg viewBox="0 0 150 150"><circle cx="75" cy="75" r="70" stroke="rgba(255,255,255,.08)" stroke-width="3" fill="none"/><circle cx="75" cy="75" r="70" stroke="#a9c4ff" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="185 440"/></svg><div class="a-ring-v">42<small>%</small></div><div class="a-ring-l">CPU</div><div class="a-ring-s">68 °C</div></div>
+          <div class="a-ring"><svg viewBox="0 0 150 150"><circle cx="75" cy="75" r="70" stroke="rgba(255,255,255,.08)" stroke-width="3" fill="none"/><circle cx="75" cy="75" r="70" stroke="#a9c4ff" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="383 440"/></svg><div class="a-ring-v">87<small>%</small></div><div class="a-ring-l">GPU</div><div class="a-ring-s">64 °C</div></div>
+          <div class="a-ring"><svg viewBox="0 0 150 150"><circle cx="75" cy="75" r="70" stroke="rgba(255,255,255,.08)" stroke-width="3" fill="none"/><circle cx="75" cy="75" r="70" stroke="#a9c4ff" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="255 440"/></svg><div class="a-ring-v">58<small>%</small></div><div class="a-ring-l">RAM</div><div class="a-ring-s">18,6 / 32 Go</div></div>
+        </div>
+        <div class="a-spark"><div class="a-spark-l"><span>CPU · 60 s</span><span>moy. 38 %</span></div><svg id="a-spark" viewBox="0 0 472 120" preserveAspectRatio="none" style="width:100%;height:120px"></svg></div>
+      </div>
+      <div class="a-col">
+        <div class="a-media">
+          <div class="a-art"></div>
+          <div class="a-m">
+            <div class="a-kicker">En lecture · Spotify</div>
+            <div class="a-title">Midnight Drive</div>
+            <div class="a-artist">Synthwave Collective</div>
+            <div class="a-prog"><i></i></div>
+            <div class="a-times"><span>1:13</span><span>3:34</span></div>
+            <div class="a-ctrl"><svg class="i f"><use href="#prev"/></svg><span class="a-play"><svg class="i f"><use href="#pause"/></svg></span><svg class="i f"><use href="#next"/></svg><svg class="i a-vol"><use href="#vol"/></svg></div>
+          </div>
+        </div>
+      </div>
+      <div class="a-col">
+        <div class="a-kicker">Raccourcis</div>
+        <div class="a-keys">
+          <div class="a-key on"><span><svg class="i"><use href="#mic"/></svg></span>Micro</div>
+          <div class="a-key"><span><svg class="i"><use href="#cam"/></svg></span>Capture</div>
+          <div class="a-key"><span><svg class="i"><use href="#chat"/></svg></span>Discord</div>
+          <div class="a-key"><span><svg class="i"><use href="#folder"/></svg></span>Fichiers</div>
+          <div class="a-key"><span><svg class="i"><use href="#globe"/></svg></span>Navigateur</div>
+          <div class="a-key"><span><svg class="i"><use href="#calc"/></svg></span>Calculer</div>
+        </div>
+      </div>
+    </div></div></div>
+  </section>
+
+  <section>
+    <div class="dir-head"><span class="dir-letter">B</span><h2>Cockpit</h2></div>
+    <p class="dir-desc">Gaming, façon HUD : néon cyan/magenta, angles coupés, chiffres massifs, données denses (FPS, températures, cœurs, macros). Le plus spectaculaire sous un écran de jeu.</p>
+    <div class="bezel"><div class="screen"><div class="canvas b">
+      <div class="b-bar"><span class="brand">EDGE//STUDIO</span><span>PROFIL ▸ JEU</span><span class="sp"></span><span>NET ↓ 812 Mb/s ↑ 41 Mb/s</span><span>PING 14 ms</span><span class="live">● REC OFF</span><span data-clock-s>17:42:08</span></div>
+      <div class="b-grid">
+        <div class="b-p">
+          <div class="b-h"><span>CPU // RYZEN 9 7950X</span><b>5,4 GHz</b></div>
+          <div class="b-big"><div class="b-num">42<small>%</small></div><div class="b-side"><span class="hot">68°C</span><br>16 cœurs</div></div>
+          <div class="b-seg" data-seg="42"></div>
+          <div class="b-cores" id="b-cores"></div>
+          <div class="b-meta"><span>CHARGE / CŒUR</span><span>VENTILO <b>1 240 RPM</b></span></div>
+        </div>
+        <div class="b-p">
+          <div class="b-h"><span>GPU // RTX 4080</span><b>286 W</b></div>
+          <div class="b-big"><div class="b-num">87<small>%</small></div><div class="b-side"><span class="hot">64°C</span><br>2 790 MHz</div></div>
+          <div class="b-seg" data-seg="87"></div>
+          <div class="b-meta" style="margin-top:auto"><span>VRAM</span><span><b>11,2</b> / 16 GO</span></div>
+          <div class="b-seg" data-seg="70" style="margin-top:10px;height:14px"></div>
+          <div class="b-meta"><span>HOTSPOT <b>78°C</b></span><span>VENTILO <b>62 %</b></span></div>
+        </div>
+        <div class="b-p b-fps">
+          <div class="b-num">144</div>
+          <div class="b-fps-l">FPS · JEU EN COURS</div>
+          <svg id="b-ft" viewBox="0 0 360 90" preserveAspectRatio="none"></svg>
+          <div class="b-meta" style="width:100%"><span>1% LOW <b>118</b></span><span>FRAMETIME <b>6,9 ms</b></span></div>
+        </div>
+        <div class="b-p b-media">
+          <div style="display:flex;flex-direction:column;gap:14px"><div class="b-art"></div><div class="b-meta" style="margin:0"><span>1:13</span><span>3:34</span></div></div>
+          <div class="b-mm">
+            <div class="b-h"><span>AUDIO // SPOTIFY</span><b>▶ LIVE</b></div>
+            <div class="b-title">Midnight Drive</div>
+            <div class="b-artist">Synthwave Collective</div>
+            <div class="b-viz" id="b-viz"></div>
+            <div class="b-mc"><span class="b-btn"><svg class="i f"><use href="#prev"/></svg></span><span class="b-btn pri"><svg class="i f"><use href="#pause"/></svg></span><span class="b-btn"><svg class="i f"><use href="#next"/></svg></span><span class="b-btn"><svg class="i"><use href="#vol"/></svg></span></div>
+          </div>
+        </div>
+        <div class="b-p">
+          <div class="b-h"><span>MACROS</span><b>6/12</b></div>
+          <div class="b-macros">
+            <div class="b-mac alert"><svg class="i"><use href="#micoff"/></svg><div><span>Micro coupé</span><br><em>CTRL+SHIFT+M</em></div></div>
+            <div class="b-mac"><svg class="i"><use href="#clip"/></svg><div><span>Clip 30 s</span><br><em>ALT+F10</em></div></div>
+            <div class="b-mac"><svg class="i"><use href="#layers"/></svg><div><span>Scène OBS</span><br><em>JEU ▸ PAUSE</em></div></div>
+            <div class="b-mac"><svg class="i"><use href="#rec"/></svg><div><span>Stream</span><br><em>HORS LIGNE</em></div></div>
+            <div class="b-mac"><svg class="i"><use href="#chat"/></svg><div><span>Discord</span><br><em>3 EN VOCAL</em></div></div>
+            <div class="b-mac"><svg class="i"><use href="#cam"/></svg><div><span>Capture</span><br><em>WIN+SHIFT+S</em></div></div>
+          </div>
+        </div>
+      </div>
+    </div></div></div>
+  </section>
+
+  <section>
+    <div class="dir-head"><span class="dir-letter">C</span><h2>Bento</h2></div>
+    <p class="dir-desc">Tuiles pleines, couleurs franches, coins très arrondis, chiffres gras. Lisible de loin et chaleureux, plus « objet déco » que tableau de bord technique.</p>
+    <div class="bezel"><div class="screen"><div class="canvas c">
+      <div class="c-t c-clock"><div class="k">Paris</div><div class="t" data-clock>17:42</div><div class="d" data-date>mardi 10 novembre</div></div>
+      <div class="c-t c-wx"><svg class="i ic"><use href="#rain"/></svg><div class="t">13°</div><div class="l">Pluie faible · ressenti 11°</div>
+        <div class="hrs"><div>18h<b>13°</b></div><div>19h<b>12°</b></div><div>20h<b>12°</b></div><div>21h<b>11°</b></div></div></div>
+      <div class="c-t c-media"><div class="c-art"></div><div class="c-mm"><div class="c-src">Spotify</div><div class="c-title">Midnight Drive</div><div class="c-artist">Synthwave Collective</div><div class="c-prog"><i></i></div>
+        <div class="c-ctrl"><span><svg class="i f"><use href="#prev"/></svg></span><span class="p"><svg class="i f"><use href="#pause"/></svg></span><span><svg class="i f"><use href="#next"/></svg></span></div></div></div>
+      <div class="c-t c-sys"><div class="k">Système</div>
+        <div class="c-row"><div class="top"><span class="lab">CPU<span class="chip">68 °C</span></span><span class="n">42%</span></div><div class="c-pill"><i style="width:42%;background:#c6f432"></i></div></div>
+        <div class="c-row"><div class="top"><span class="lab">GPU<span class="chip">64 °C</span></span><span class="n">87%</span></div><div class="c-pill"><i style="width:87%;background:#ff5fa2"></i></div></div>
+        <div class="c-row"><div class="top"><span class="lab">RAM<span class="chip">18,6 Go</span></span><span class="n">58%</span></div><div class="c-pill"><i style="width:58%;background:#5ac8fa"></i></div></div>
+      </div>
+      <div class="c-t c-keys">
+        <div class="c-key" style="background:#ffd23f"><svg class="i"><use href="#mic"/></svg>Micro</div>
+        <div class="c-key" style="background:#7ae582"><svg class="i"><use href="#cam"/></svg>Capture</div>
+        <div class="c-key" style="background:#b8a1ff"><svg class="i"><use href="#chat"/></svg>Discord</div>
+        <div class="c-key" style="background:#ff8fab"><svg class="i"><use href="#folder"/></svg>Fichiers</div>
+        <div class="c-key" style="background:#7bdff2"><svg class="i"><use href="#globe"/></svg>Web</div>
+        <div class="c-key" style="background:#111;color:#fff"><svg class="i"><use href="#calc"/></svg>Calcul</div>
+      </div>
+    </div></div></div>
+  </section>
+</div>
+
+<script>
+  // Mise à l'échelle des écrans 2560×720.
+  document.querySelectorAll(".screen").forEach((s) => {
+    const c = s.querySelector(".canvas");
+    const fit = () => (c.style.transform = `scale(${s.clientWidth / 2560})`);
+    new ResizeObserver(fit).observe(s); fit();
+  });
+
+  // Horloges en direct.
+  const pad = (n) => String(n).padStart(2, "0");
+  const tick = () => {
+    const d = new Date();
+    document.querySelectorAll("[data-clock]").forEach((e) => (e.textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}`));
+    document.querySelectorAll("[data-clock-s]").forEach((e) => (e.textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`));
+    document.querySelectorAll("[data-date]").forEach((e) => (e.textContent = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })));
+  };
+  tick(); setInterval(tick, 1000);
+
+  // Données fictives déterministes.
+  let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+
+  // A : courbe CPU.
+  const pts = Array.from({ length: 60 }, (_, i) => 30 + Math.sin(i / 6) * 14 + rnd() * 14);
+  const path = pts.map((v, i) => `${(i / 59) * 472},${120 - (v / 100) * 120}`).join(" ");
+  document.getElementById("a-spark").innerHTML =
+    `<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9c4ff" stop-opacity=".28"/><stop offset="1" stop-color="#a9c4ff" stop-opacity="0"/></linearGradient></defs>` +
+    `<polygon points="0,120 ${path} 472,120" fill="url(#ag)"/><polyline points="${path}" fill="none" stroke="#a9c4ff" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
+
+  // B : barres segmentées, cœurs, frametime, visualiseur.
+  document.querySelectorAll("[data-seg]").forEach((el) => {
+    const v = +el.dataset.seg, n = 30;
+    el.innerHTML = Array.from({ length: n }, (_, i) => {
+      const on = i < Math.round((v / 100) * n), p = i / n;
+      return `<i class="${on ? "on" : ""} ${on && p > .8 ? "h" : on && p > .6 ? "w" : ""}"></i>`;
+    }).join("");
+  });
+  document.getElementById("b-cores").innerHTML = Array.from({ length: 16 }, () => `<i style="height:${15 + rnd() * 80}%"></i>`).join("");
+  const ft = Array.from({ length: 80 }, (_, i) => 45 + Math.sin(i / 3) * 6 + rnd() * 10 + (i === 52 ? 30 : 0));
+  document.getElementById("b-ft").innerHTML = `<polyline points="${ft.map((v, i) => `${(i / 79) * 360},${90 - v}`).join(" ")}" fill="none" stroke="#ff3d8b" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
+  const viz = document.getElementById("b-viz");
+  viz.innerHTML = Array.from({ length: 36 }, () => "<i></i>").join("");
+  const bars = [...viz.children];
+  const animate = () => bars.forEach((b, i) => (b.style.height = `${12 + Math.abs(Math.sin(Date.now() / 300 + i * .7)) * 70 + Math.random() * 18}%`));
+  animate(); setInterval(animate, 180);
+</script>
+</body>
+</html>

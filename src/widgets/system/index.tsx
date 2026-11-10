@@ -1,0 +1,64 @@
+import { defineWidget } from "../../sdk/types";
+import { findSensor, useSensors, useSystemStats } from "../../sdk/hooks";
+import { Kicker, RingGauge, Sparkline } from "../../sdk/components";
+import "./system.css";
+
+interface Settings {
+  lhmUrl: string;
+  showGpu: boolean;
+  showCores: boolean;
+}
+
+const isGpu = (p: string) => /nvidia|radeon|amd.*(rx|graphics)|intel.*arc|gpu/i.test(p.split(" / ")[0] ?? "");
+const fmtGo = (b: number) => (b / 1024 ** 3).toFixed(1).replace(".", ",");
+
+export default defineWidget<Settings>({
+  type: "system",
+  name: "Système",
+  description: "CPU, GPU, RAM et températures en direct.",
+  icon: "activity",
+  defaultSize: { w: 4, h: 4 },
+  minSize: { w: 3, h: 2 },
+  settings: [
+    { key: "showGpu", label: "GPU et températures", type: "boolean", default: true, help: "Nécessite LibreHardwareMonitor avec le serveur web activé." },
+    { key: "lhmUrl", label: "URL LibreHardwareMonitor", type: "text", default: "http://localhost:8085/data.json" },
+    { key: "showCores", label: "Charge par cœur", type: "boolean", default: false },
+  ],
+  component: ({ settings, size }) => {
+    const { value: s, history } = useSystemStats();
+    const sensors = useSensors(settings.showGpu ? settings.lhmUrl : "");
+    const list = settings.showGpu ? sensors.value : undefined;
+    const gpuLoad = findSensor(list, (x) => isGpu(x.path) && /\/ Load \//.test(x.path) && /GPU Core/i.test(x.name));
+    const gpuTemp = findSensor(list, (x) => isGpu(x.path) && x.unit === "°C" && /GPU Core|GPU Temperature|Edge/i.test(x.name));
+    const cpuTemp = findSensor(list, (x) => !isGpu(x.path) && x.unit === "°C" && /Tctl|Package|CPU|Core \(/i.test(x.name));
+    const mem = s ? (s.memUsed / s.memTotal) * 100 : null;
+    const cpuHist = history.map((h) => h.cpu);
+    const avg = cpuHist.length ? Math.round(cpuHist.reduce((a, b) => a + b, 0) / cpuHist.length) : null;
+    const temp = (t: number | null) => (t == null ? " " : `${Math.round(t)} °C`);
+
+    return (
+      <div className="sys">
+        <Kicker>Système</Kicker>
+        <div className="sys-rings">
+          <RingGauge value={s?.cpu ?? null} label="CPU" sub={temp(cpuTemp)} />
+          {settings.showGpu && <RingGauge value={gpuLoad} label="GPU" sub={gpuTemp != null ? temp(gpuTemp) : sensors.error ? "hors ligne" : " "} />}
+          <RingGauge value={mem} label="RAM" sub={s ? `${fmtGo(s.memUsed)} / ${Math.round(s.memTotal / 1024 ** 3)} Go` : " "} />
+        </div>
+        {size.h >= 3 && (
+          <div className="sys-spark">
+            <div className="sys-spark-l">
+              <span>CPU · 60 s</span>
+              {avg != null && <span>moy. {avg} %</span>}
+            </div>
+            <Sparkline values={cpuHist} height="min(17cqh, 120px)" />
+          </div>
+        )}
+        {settings.showCores && size.h >= 4 && s && (
+          <div className="sys-cores">
+            {s.cpuPerCore.map((c, i) => <i key={i} style={{ height: `${Math.max(4, c)}%` }} />)}
+          </div>
+        )}
+      </div>
+    );
+  },
+});

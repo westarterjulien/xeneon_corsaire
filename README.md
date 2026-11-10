@@ -1,0 +1,131 @@
+# Edge Studio
+
+Logiciel 100 % personnalisé pour l'écran tactile **Corsair Xeneon Edge** (14,5", 2560×720), à la place d'iCUE.
+Application **Tauri 2** (backend Rust + interface React/TypeScript), légère et pensée pour tourner en permanence.
+
+- Fenêtre sans bordure placée automatiquement sur l'Edge (détection du format 32:9, ou choix manuel).
+- Grille tactile de 16 × 4 cellules, plusieurs pages (balayage horizontal), mode édition au doigt.
+- Widgets modulaires : un dossier = un widget, enregistré automatiquement.
+- Configuration sauvegardée dans `%APPDATA%\fr.westarter.edgestudio\config.json`.
+
+## Widgets fournis
+
+| Widget | Données |
+|---|---|
+| Horloge | Heure/date, fuseau au choix |
+| Météo | Open-Meteo (sans clé API) |
+| Moniteur système | CPU/RAM (natif), GPU et températures via LibreHardwareMonitor |
+| Lecteur média | Lecture en cours de Windows (Spotify, navigateurs, VLC…), pochette, contrôles, volume |
+| Raccourcis | Ouvrir appli/URL/protocole, combinaisons de touches, commandes, changement de page |
+| Page web | Intègre Home Assistant, Grafana, etc. |
+
+## Installation sous Windows
+
+Prérequis : [Node.js 20+](https://nodejs.org), [Rust](https://rustup.rs) (toolchain MSVC + « Desktop development with C++ » de Visual Studio Build Tools), WebView2 (déjà présent sur Windows 11).
+
+```powershell
+npm install
+npm run tauri dev      # développement, rechargement à chaud
+npm run tauri build    # installateur dans src-tauri\target\release\bundle\
+```
+
+### Régler le tactile une fois
+
+Si les touchers arrivent sur l'écran principal : **Panneau de configuration → Paramètres du Tablet PC → Configurer → Entrée tactile**, puis toucher l'Edge quand Windows le demande.
+
+### Capteurs GPU et températures
+
+Installer [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor), le lancer en administrateur, puis activer **Options → Remote Web Server → Run** (port 8085 par défaut). L'URL se règle dans le widget « Moniteur système ».
+
+## Utilisation
+
+### Studio (sur l'écran principal, à la souris)
+
+Clic sur l'icône **Edge Studio** dans la zone de notification (ou bouton **Studio** en mode édition sur l'Edge) :
+- aperçu de l'Edge à l'échelle : glisser pour déplacer, coin pour redimensionner, clic pour sélectionner ;
+- bibliothèque à gauche (widgets intégrés et perso, création d'un widget perso) ;
+- réglages du widget sélectionné à droite (ou couleurs et écran quand rien n'est sélectionné) ;
+- onglets de pages : ajouter, renommer, réordonner, supprimer.
+
+Tout est enregistré et appliqué à l'Edge en direct ; changer de page dans le Studio l'affiche sur l'Edge, et inversement.
+
+### Sur l'Edge, au doigt
+
+- **Mode édition** : bouton ✎ discret en bas à droite, ou appui long sur une zone vide.
+  Glisser un widget pour le déplacer, la poignée en bas à droite pour le redimensionner, ⚙ pour ses réglages.
+- **Raccourcis** : éditeur visuel (libellé, icône, action : ouvrir, touches avec capture de la combinaison, commande, média, page).
+- **Météo** : recherche de ville par son nom.
+- **Pages** : balayage horizontal ou points en bas de l'écran.
+
+## Créer un widget
+
+Deux façons :
+
+1. **Widget perso, sans recompiler** (recommandé) : mode édition → ＋ Widget → **Créer un widget**.
+   Un dossier `widget.json` + `index.html` est créé dans `%APPDATA%\fr.westarter.edgestudio\widgets\` et se recharge à chaud à chaque enregistrement.
+   Guide complet et API : [docs/widgets-perso.md](docs/widgets-perso.md).
+2. **Widget intégré** (React, compilé avec l'appli) : pour les widgets qui ont besoin du SDK React ou d'un éditeur de réglages sur mesure.
+
+### Widget intégré
+
+Créer `src/widgets/mon-widget/index.tsx` :
+
+```tsx
+import { defineWidget } from "../../sdk/types";
+import { useSystemStats } from "../../sdk/hooks";
+
+interface Settings { titre: string }
+
+export default defineWidget<Settings>({
+  type: "mon-widget",            // identifiant stable (sauvegardé dans la config)
+  name: "Mon widget",
+  description: "Ce qu'il fait.",
+  icon: "✨",
+  defaultSize: { w: 3, h: 2 },   // en cellules (grille 16 × 4)
+  minSize: { w: 2, h: 1 },
+  settings: [{ key: "titre", label: "Titre", type: "text", default: "Bonjour" }],
+  component: ({ settings, size }) => {
+    const { value: stats } = useSystemStats();
+    return <div style={{ padding: 20 }}>{settings.titre} — CPU {stats?.cpu.toFixed(0)} %</div>;
+  },
+});
+```
+
+Il apparaît aussitôt dans la palette « ＋ Widget ». Outils du SDK (`src/sdk/`) :
+
+- `hooks.ts` : `useSystemStats`, `useSensors`, `useMedia`, `useNow`, `useFetchJson`, `useShared` (source de données partagée entre widgets, une seule requête par intervalle).
+- `components.tsx` : `RingGauge`, `Sparkline`, `WidgetFrame`, formateurs.
+- `page.ts` : `usePages()` pour naviguer entre les pages.
+- `bridge` : `bridge.runAction(...)`, `bridge.mediaControl(...)`.
+- Types de réglages : `text`, `number`, `boolean`, `select`, `color`, `icon`, `json`, et `custom` (éditeur React fourni par le widget, ex. `ShortcutsEditor`, `CitySearch`). Le panneau est généré automatiquement.
+- Le CSS peut utiliser les unités `cqw`/`cqh` (taille du widget) pour s'adapter au redimensionnement.
+
+Pour une donnée native (API Windows, matériel…), ajouter une commande `#[tauri::command]` dans `src-tauri/src/`, l'enregistrer dans `lib.rs`, puis l'exposer dans `src/bridge/index.ts` (avec une valeur simulée pour le mode navigateur).
+
+## Développer sans l'écran
+
+`npm run dev` puis ouvrir http://localhost:1420 : l'interface tourne dans le navigateur avec des données simulées (CPU, GPU, média). Régler la fenêtre en 2560×720 (outils de développement → mode responsive) pour retrouver le rendu réel.
+
+## Structure
+
+```
+src/
+  App.tsx            hôte : pages, balayage, mode édition, sauvegarde
+  core/              grille, disposition, panneaux de réglages
+  sdk/               contrat des widgets, hooks, composants, registre automatique
+  bridge/            appels au backend Rust (+ simulation hors Tauri)
+  widgets/<nom>/     un dossier par widget
+src-tauri/src/
+  display.rs         détection de l'Edge et placement de la fenêtre
+  system.rs          CPU/RAM (sysinfo) + capteurs LibreHardwareMonitor
+  media.rs           lecture en cours Windows (SMTC) + contrôles
+  keys.rs            simulation de touches (SendInput)
+  actions.rs         ouvrir / commande / touches / média
+  config.rs          lecture/écriture de la configuration
+  user_widgets.rs    widgets perso : liste, création, protocole edgewidget://
+  studio.rs          fenêtre Studio + icône de la zone de notification
+src/studio/          interface du Studio (studio.html)
+src/core/store.ts    configuration partagée + synchronisation Edge ↔ Studio (sync.ts)
+public/user-widgets/ SDK des widgets perso (edge.js, edge.css, police) + exemple Pomodoro
+templates/widget/    modèle utilisé par « Créer un widget »
+```

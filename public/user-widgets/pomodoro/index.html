@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="../_sdk/edge.css" />
+  <script src="../_sdk/edge.js"></script>
+  <style>
+    .time { font-size: min(44cqh, 26cqw); margin: 2cqh 0 3cqh -.03em; }
+    .track { margin-bottom: 4cqh; }
+    @container (max-height: 200px) { .kicker, .track { display: none; } .time { margin: 0; } body { flex-direction: row; align-items: center; justify-content: space-between; } }
+  </style>
+</head>
+<body>
+  <div class="kicker" id="phase">Concentration</div>
+  <div class="thin time" id="time">25:00</div>
+  <div class="track"><i id="bar" style="width:0%"></i></div>
+  <div class="row">
+    <button class="btn primary" id="toggle">Démarrer</button>
+    <button class="btn" id="reset">Réinitialiser</button>
+  </div>
+  <script>
+    let phase = "focus", remaining = 25 * 60, running = false, timer = null;
+    const $ = (id) => document.getElementById(id);
+    const total = () => (Edge.settings[phase] ?? (phase === "focus" ? 25 : 5)) * 60;
+    const render = () => {
+      $("time").textContent = `${String(Math.floor(remaining / 60)).padStart(2, "0")}:${String(remaining % 60).padStart(2, "0")}`;
+      $("phase").textContent = phase === "focus" ? "Concentration" : "Pause";
+      $("bar").style.width = `${100 - (remaining / total()) * 100}%`;
+      $("toggle").textContent = running ? "Pause" : "Démarrer";
+    };
+    const tick = () => {
+      if (--remaining <= 0) { phase = phase === "focus" ? "pause" : "focus"; remaining = total(); }
+      render();
+    };
+    $("toggle").onclick = () => { running = !running; clearInterval(timer); if (running) timer = setInterval(tick, 1000); render(); };
+    $("reset").onclick = () => { running = false; clearInterval(timer); phase = "focus"; remaining = total(); render(); };
+    Edge.on("settings", () => { if (!running) { remaining = total(); render(); } });
+  </script>
+</body>
+</html>
