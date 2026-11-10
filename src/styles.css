@@ -214,3 +214,11 @@ input, select, textarea { font: inherit; color: inherit; user-select: text; -web
 .form-inline-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-weight: 300; }
 .form .form-inline-row input[type="time"], .form .form-inline-row input[type="number"], .form .form-inline-row select { width: auto; background: transparent; border: none; border-bottom: 1px solid rgba(255, 255, 255, .14); padding: 6px 0; font-size: 16px; color: var(--text); color-scheme: dark; }
 .form .form-inline-row input[type="number"] { width: 64px; }
+
+/* Déplacer vers une autre page */
+.move-page { display: flex; flex-direction: column; gap: 8px; }
+.move-page-btns { display: flex; gap: 8px; }
+.move-page-btns .chip { flex: 1; }
+.move-page select { background: transparent; border: none; border-bottom: 1px solid rgba(255, 255, 255, .14); padding: 10px 0; font-size: 17px; color: var(--text); }
+.sx-inspector .move-page select { height: 36px; padding: 0 11px; border-radius: 10px; background: rgba(255, 255, 255, .035); border: 1px solid rgba(255, 255, 255, .11); font-size: 13px; }
+.sx-inspector .move-page-btns .chip { justify-content: center; }

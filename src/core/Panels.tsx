@@ -4,7 +4,7 @@ import { Icon } from "../sdk/icons";
 import { isUserWidget, useRegistryVersion, useUserWidgetsInfo, widgetRegistry } from "../sdk/registry";
 import type { SettingField, WidgetDefinition } from "../sdk/types";
 import { IconPicker } from "./IconPicker";
-import { GRID, isFree, type AppConfig, type Page, type Rect, type WidgetInstance } from "./layout";
+import { findFreeSpot, GRID, isFree, type AppConfig, type Page, type Rect, type WidgetInstance } from "./layout";
 
 export function Sheet({ title, onClose, children }: { title: ReactNode; onClose: () => void; children: ReactNode }) {
   return (
@@ -203,7 +203,30 @@ export function SizeControls({ page, instance, onLayout }: { page: Page; instanc
   );
 }
 
-export function WidgetSettings({ page, instance, onChange, onLayout, onClose }: { page: Page; instance: WidgetInstance; onChange: (s: Record<string, unknown>) => void; onLayout: (w: WidgetInstance[]) => void; onClose: () => void }) {
+/** Déplacer ou copier un widget vers une autre page. */
+export function MoveToPage({ pages, currentId, size, onMove }: { pages: Page[]; currentId: string; size?: { w: number; h: number }; onMove: (toId: string, copy: boolean) => string | null }) {
+  const others = pages.filter((p) => p.id !== currentId);
+  const fits = (p: Page) => !size || !!findFreeSpot(p, size.w, size.h);
+  const [to, setTo] = useState((others.find(fits) ?? others[0])?.id ?? "");
+  const [msg, setMsg] = useState<string | null>(null);
+  if (!others.length) return <span className="form-help">Ajoute une autre page pour pouvoir y déplacer ce widget.</span>;
+  const target = others.some((p) => p.id === to) ? to : others[0].id;
+  const run = (copy: boolean) => setMsg(onMove(target, copy));
+  return (
+    <div className="move-page">
+      <select value={target} onChange={(e) => setTo(e.target.value)} aria-label="Page de destination">
+        {others.map((p) => <option key={p.id} value={p.id}>{p.name}{fits(p) ? "" : " (pleine)"}</option>)}
+      </select>
+      <div className="move-page-btns">
+        <button type="button" className="chip" onClick={() => run(false)}>Déplacer</button>
+        <button type="button" className="chip" onClick={() => run(true)}>Copier</button>
+      </div>
+      {msg && <span className="form-help">{msg}</span>}
+    </div>
+  );
+}
+
+export function WidgetSettings({ page, pages, instance, onChange, onLayout, onMove, onClose }: { page: Page; pages?: Page[]; instance: WidgetInstance; onChange: (s: Record<string, unknown>) => void; onLayout: (w: WidgetInstance[]) => void; onMove?: (toId: string, copy: boolean) => string | null; onClose: () => void }) {
   useRegistryVersion();
   const def = widgetRegistry.get(instance.type);
   if (!def) return null;
@@ -211,6 +234,12 @@ export function WidgetSettings({ page, instance, onChange, onLayout, onClose }: 
     <Sheet title={<><Icon name={def.icon} /> {def.name}</>} onClose={onClose}>
       <div className="form-label sizer-title">Taille et position</div>
       <SizeControls page={page} instance={instance} onLayout={onLayout} />
+      {pages && onMove && (
+        <>
+          <div className="form-label sizer-title">Autre page</div>
+          <MoveToPage pages={pages} currentId={page.id} size={instance} onMove={onMove} />
+        </>
+      )}
       <div className="form-label sizer-title">Réglages</div>
       <SettingsForm def={def} settings={instance.settings} onChange={onChange} />
     </Sheet>

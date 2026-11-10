@@ -129,3 +129,22 @@ export function sanitizeConfig(raw: unknown): AppConfig {
     pages,
   };
 }
+
+/**
+ * Déplace (ou copie) un widget vers une autre page, à la première place libre
+ * (sa taille, sinon sa taille minimale). Renvoie null s'il n'y a pas la place.
+ */
+export function moveWidget(pages: Page[], fromId: string, widgetId: string, toId: string, copy: boolean, minSize?: { w: number; h: number }): Page[] | null {
+  const from = pages.find((p) => p.id === fromId);
+  const to = pages.find((p) => p.id === toId);
+  const w = from?.widgets.find((x) => x.id === widgetId);
+  if (!from || !to || !w || from.id === to.id) return null;
+  const spot = findFreeSpot(to, w.w, w.h) ?? (minSize ? findFreeSpot(to, minSize.w, minSize.h) : null);
+  if (!spot) return null;
+  const moved: WidgetInstance = { ...w, ...spot, id: copy ? uid() : w.id, settings: structuredClone(w.settings) };
+  return pages.map((p) => {
+    if (p.id === to.id) return { ...p, widgets: [...p.widgets, moved] };
+    if (p.id === from.id && !copy) return { ...p, widgets: p.widgets.filter((x) => x.id !== w.id) };
+    return p;
+  });
+}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent } from "react";
 import { bridge, isTauri } from "./bridge";
 import { Grid } from "./core/Grid";
-import { createInstance, findFreeSpot, uid, type WidgetInstance } from "./core/layout";
+import { createInstance, findFreeSpot, moveWidget, uid, type WidgetInstance } from "./core/layout";
 import { useAppConfig } from "./core/store";
 import { publish, subscribe } from "./core/sync";
 import { AppSettings, Palette, WidgetSettings } from "./core/Panels";
@@ -204,6 +204,15 @@ export default function App() {
         {editedWidget && (
           <WidgetSettings
             page={page}
+            pages={config.pages}
+            onMove={(toId, copy) => {
+              const def = widgetRegistry.get(editedWidget.type);
+              const next = moveWidget(config.pages, page.id, editedWidget.id, toId, copy, def?.minSize);
+              if (!next) return "Pas assez de place sur cette page.";
+              setConfig({ ...config, pages: next });
+              if (!copy) setPanel(null);
+              return copy ? "Copié." : null;
+            }}
             onLayout={updatePage}
             instance={editedWidget}
             onClose={() => setPanel(null)}

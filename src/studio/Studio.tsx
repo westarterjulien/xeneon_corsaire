@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import { bridge, isTauri } from "../bridge";
 import { Grid } from "../core/Grid";
-import { createInstance, findFreeSpot, GRID, isFree, type Page, type PageAuto, type Rect, type WidgetInstance } from "../core/layout";
-import { AppearanceForm, SettingsForm, SizeControls } from "../core/Panels";
+import { createInstance, findFreeSpot, GRID, isFree, moveWidget, type Page, type PageAuto, type Rect, type WidgetInstance } from "../core/layout";
+import { AppearanceForm, MoveToPage, SettingsForm, SizeControls } from "../core/Panels";
 import { useAppConfig } from "../core/store";
 import { publish, subscribe } from "../core/sync";
 import { PAGE_TEMPLATES } from "../core/templates";
@@ -566,6 +566,28 @@ export default function Studio() {
                 </div>
                 <Card title="Taille et position">
                   <SizeControls page={page} instance={sel} onLayout={updatePage} />
+                </Card>
+                <Card title="Autre page">
+                  <MoveToPage
+                    key={sel.id}
+                    pages={pages}
+                    currentId={page.id}
+                    size={sel}
+                    onMove={(toId, copy) => {
+                      const next = moveWidget(pages, page.id, sel.id, toId, copy, selDef.minSize);
+                      if (!next) return "Pas assez de place sur cette page : libère de l'espace ou réduis le widget.";
+                      updatePages(() => next);
+                      const target = next.findIndex((p) => p.id === toId);
+                      if (!copy) {
+                        // Suit le widget sur sa nouvelle page.
+                        setPageIndex(target);
+                        publish({ type: "page", index: target });
+                        window.setTimeout(() => setSelected(sel.id), 0);
+                        return null;
+                      }
+                      return `Copié sur « ${next[target].name} ».`;
+                    }}
+                  />
                 </Card>
                 <Card title="Réglages">
                   <SettingsForm key={sel.id} def={selDef} settings={sel.settings} onChange={(settings) => updatePage(page.widgets.map((w) => (w.id === sel.id ? { ...w, settings } : w)))} />
