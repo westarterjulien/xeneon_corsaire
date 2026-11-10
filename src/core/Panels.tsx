@@ -31,6 +31,9 @@ function PaletteItem({ d, onPick }: { d: WidgetDefinition; onPick: (type: string
   );
 }
 
+const GUIDE_URL = "https://github.com/westarterjulien/xeneon_corsaire/blob/main/docs/widgets-perso.md";
+const openGuide = () => (isTauri ? bridge.runAction({ kind: "open", target: GUIDE_URL }) : window.open(GUIDE_URL, "_blank", "noopener"));
+
 /** Bibliothèque de widgets (intégrés + perso), utilisée par la palette de l'Edge et par le Studio. */
 export function WidgetLibrary({ onPick, onReload, compact = false }: { onPick: (type: string) => void; onReload: () => void; compact?: boolean }) {
   useRegistryVersion();
@@ -64,6 +67,7 @@ export function WidgetLibrary({ onPick, onReload, compact = false }: { onPick: (
       </div>
       <div className="palette-actions">
         <button className="link-btn" onClick={create}><Icon name="plus" /> Créer un widget</button>
+        <button className="link-btn" onClick={() => openGuide()}><Icon name="link" /> Guide</button>
         {isTauri && info.dir && (
           <button className="link-btn" onClick={() => bridge.runAction({ kind: "open", target: info.dir! })}><Icon name="folder" /> Ouvrir le dossier</button>
         )}
