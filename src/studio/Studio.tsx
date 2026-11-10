@@ -75,21 +75,27 @@ export default function Studio() {
 
   if (!config || !page) return <div className="boot">Edge Studio</div>;
 
-  const updatePages = (fn: (pages: Page[]) => Page[]) => setConfig({ ...config, pages: fn(config.pages) });
+  // Mises à jour fonctionnelles : plusieurs modifications rapprochées ne s'écrasent pas.
+  const updatePages = (fn: (pages: Page[]) => Page[]) => setConfig((c) => (c ? { ...c, pages: fn(c.pages) } : c));
   const updatePage = (widgets: WidgetInstance[]) => updatePages((ps) => ps.map((p) => (p.id === page.id ? { ...p, widgets } : p)));
 
   const addWidget = (type: string, settings?: Record<string, unknown>) => {
     const def = widgetRegistry.get(type);
     if (!def) return;
-    const spot = findFreeSpot(page, def.defaultSize.w, def.defaultSize.h) ?? (def.minSize ? findFreeSpot(page, def.minSize.w, def.minSize.h) : null) ?? findFreeSpot(page, 1, 1);
-    if (!spot) {
-      setNotice("Plus de place sur cette page : réduis un widget ou ajoute une page.");
-      return;
-    }
-    const inst = createInstance(type, spot);
+    const pageId = page.id;
+    // Instance créée une seule fois (identifiant stable) ; seule sa place est calculée dans la mise à jour.
+    const inst = createInstance(type, { x: 0, y: 0, ...def.defaultSize });
     if (settings) inst.settings = structuredClone(settings);
-    updatePage([...page.widgets, inst]);
-    setSelected(inst.id);
+    let placed = false;
+    updatePages((ps) =>
+      ps.map((p) => {
+        if (p.id !== pageId) return p;
+        const spot = findFreeSpot(p, def.defaultSize.w, def.defaultSize.h) ?? (def.minSize ? findFreeSpot(p, def.minSize.w, def.minSize.h) : null) ?? findFreeSpot(p, 1, 1);
+        placed = !!spot;
+        return spot ? { ...p, widgets: [...p.widgets, { ...inst, ...spot }] } : p;
+      }),
+    );
+    window.setTimeout(() => (placed ? setSelected(inst.id) : setNotice("Plus de place sur cette page : réduis un widget ou ajoute une page.")), 0);
   };
 
   const addPage = () => {

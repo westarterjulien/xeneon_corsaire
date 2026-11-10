@@ -28,6 +28,12 @@ fn hidden(cmd: &mut Command) -> &mut Command {
 }
 
 pub fn open_target(target: &str) -> Result<(), String> {
+    // Applis du menu Démarrer (y compris Store) : shell:AppsFolder\<AppID>, ouvert par l'Explorateur.
+    if cfg!(windows) && target.to_ascii_lowercase().starts_with("shell:") {
+        let mut c = Command::new("explorer.exe");
+        c.arg(target);
+        return hidden(&mut c).spawn().map(|_| ()).map_err(|e| e.to_string());
+    }
     let mut cmd = if cfg!(windows) {
         let mut c = Command::new("cmd");
         // Le premier argument vide de `start` est le titre de la fenêtre.

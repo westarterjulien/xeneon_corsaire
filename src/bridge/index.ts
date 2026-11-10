@@ -59,6 +59,35 @@ export type Action =
   | { kind: "media"; command: MediaCommand }
   | { kind: "page"; page: number };
 
+export interface AudioEndpoint {
+  name: string;
+  /** 0 à 100. */
+  volume: number;
+  muted: boolean;
+}
+export interface AppVolume extends AudioEndpoint {
+  pid: number;
+}
+export interface AudioState {
+  output: AudioEndpoint | null;
+  input: AudioEndpoint | null;
+  apps: AppVolume[];
+}
+
+export interface InstalledApp {
+  name: string;
+  /** AppID du menu Démarrer, ou chemin complet d'un programme (C:\…\app.exe). */
+  id: string;
+}
+
+export interface Battery {
+  id: string;
+  name: string;
+  kind: "mouse" | "keyboard" | "headset" | "other";
+  percentage: number | null;
+  charging: boolean;
+}
+
 export interface MonitorInfo {
   name: string | null;
   width: number;
@@ -141,6 +170,19 @@ function mockEvents(): CalendarEvent[] {
 }
 
 // ---------- Simulation (mode navigateur) ----------
+const mockAudio: AudioState = {
+  output: { name: "Haut-parleurs (Realtek Audio)", volume: 42, muted: false },
+  input: { name: "Micro (Logitech PRO X)", volume: 80, muted: false },
+  apps: [
+    { pid: 1, name: "Spotify", volume: 70, muted: false },
+    { pid: 2, name: "Discord", volume: 100, muted: false },
+    { pid: 3, name: "Chrome", volume: 55, muted: true },
+    { pid: 0, name: "Sons système", volume: 30, muted: false },
+  ],
+};
+const mockApps: InstalledApp[] = ["Spotify", "Discord", "Steam", "Chrome", "Visual Studio Code", "OBS Studio", "Explorateur de fichiers", "Calculatrice", "Bloc-notes", "Paramètres", "Outlook", "Teams"].map(
+  (name) => ({ name, id: `simulation.${name.toLowerCase().replace(/\W+/g, "")}` }),
+);
 const t0 = Date.now();
 const wave = (period: number, phase = 0) => (Math.sin(((Date.now() - t0) / period) * Math.PI * 2 + phase) + 1) / 2;
 const jitter = (n: number) => (Math.random() - 0.5) * n;
@@ -274,6 +316,29 @@ export const bridge = {
   calendarDisconnect: (): Promise<void> => (isTauri ? call("calendar_disconnect") : Promise.resolve()),
   calendarEvents: (clientId: string, tenant: string, start: string, end: string): Promise<CalendarEvent[]> =>
     isTauri ? call("calendar_events", { clientId, tenant, start, end }) : Promise.resolve(mockEvents()),
+
+  // ---------- Son ----------
+  audioState: (): Promise<AudioState> => (isTauri ? call("audio_state") : Promise.resolve(structuredClone(mockAudio))),
+  /** `target` : "output", "input" ou "app:<pid>". */
+  audioSet: async (target: string, change: { volume?: number; muted?: boolean }): Promise<void> => {
+    if (isTauri) return call("audio_set", { target, volume: change.volume ?? null, muted: change.muted ?? null });
+    const e = target === "output" ? mockAudio.output : target === "input" ? mockAudio.input : mockAudio.apps.find((a) => `app:${a.pid}` === target);
+    if (e) Object.assign(e, change);
+  },
+
+  // ---------- Applications installées ----------
+  installedApps: (): Promise<InstalledApp[]> => (isTauri ? call("installed_apps") : Promise.resolve(mockApps)),
+  appIcon: (id: string): Promise<string | null> => (isTauri ? call("app_icon", { id }) : Promise.resolve(null)),
+
+  // ---------- Batteries (Logitech G HUB) ----------
+  ghubBatteries: (): Promise<Battery[]> =>
+    isTauri
+      ? call("ghub_batteries")
+      : Promise.resolve([
+          { id: "1", name: "PRO X SUPERLIGHT", kind: "mouse", percentage: 72, charging: false },
+          { id: "2", name: "PRO X Wireless", kind: "headset", percentage: 18, charging: true },
+          { id: "3", name: "G915 TKL", kind: "keyboard", percentage: 88, charging: false },
+        ]),
 
   /** Masque (ou réaffiche) la barre des tâches Windows sur l'écran de l'Edge. */
   taskbarSet: (hidden: boolean): Promise<void> => (isTauri ? call("taskbar_set", { hidden }) : Promise.resolve()),

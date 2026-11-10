@@ -18,6 +18,9 @@ Application **Tauri 2** (backend Rust + interface React/TypeScript), légère et
 | Lecteur média | Lecture en cours de Windows (Spotify, navigateurs, VLC…), pochette, contrôles, volume |
 | Raccourcis | Ouvrir appli/URL/protocole, combinaisons de touches, commandes, changement de page |
 | Page web | Intègre Home Assistant, Grafana, etc. |
+| Applications | Tes logiciels en un toucher, avec leurs vraies icônes (recherche parmi les applis installées ou chemin d'un .exe) |
+| Son | Volume et sourdine de la sortie et du micro, volume de chaque appli |
+| Batteries | Niveau des périphériques sans fil Logitech, via G HUB (interface non officielle) |
 | Agenda | Réunions Microsoft 365 / Outlook, prochain rendez-vous, bouton Rejoindre Teams ([mise en route](docs/agenda-microsoft365.md)) |
 
 ## Installer (rien à configurer)

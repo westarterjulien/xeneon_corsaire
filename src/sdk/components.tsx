@@ -1,4 +1,4 @@
-import { useId, type CSSProperties, type ReactNode } from "react";
+import { useId, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from "react";
 
 /** Anneau fin 0–100, la valeur est dessinée dans le SVG pour suivre la taille du conteneur. */
 export function RingGauge({ value, label, sub, unit = "%", color = "var(--accent)" }: { value: number | null; label: string; sub?: ReactNode; unit?: string; color?: string }) {
@@ -55,3 +55,67 @@ export const formatDuration = (s: number) => {
   const m = Math.floor(s / 60);
   return `${m}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 };
+
+/**
+ * Curseur tactile 0–100. `onChange` est appelé pendant le glissement (limité à ~15 fois/s) et au relâchement.
+ * Les évènements ne remontent pas : un glissement ne change pas de page.
+ */
+export function Slider({ value, onChange, disabled, ariaLabel }: { value: number; onChange: (v: number) => void; disabled?: boolean; ariaLabel?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [drag, setDrag] = useState<number | null>(null);
+  const last = useRef(0);
+  const v = Math.max(0, Math.min(100, drag ?? value));
+  const at = (x: number) => {
+    const r = ref.current!.getBoundingClientRect();
+    return Math.round(Math.max(0, Math.min(1, (x - r.left) / r.width)) * 100);
+  };
+  const emit = (n: number, force = false) => {
+    const now = Date.now();
+    if (force || now - last.current > 66) {
+      last.current = now;
+      onChange(n);
+    }
+  };
+  const down = (e: RPointerEvent) => {
+    if (disabled) return;
+    e.stopPropagation();
+    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+    const n = at(e.clientX);
+    setDrag(n);
+    emit(n, true);
+  };
+  const move = (e: RPointerEvent) => {
+    if (drag == null) return;
+    e.stopPropagation();
+    const n = at(e.clientX);
+    setDrag(n);
+    emit(n);
+  };
+  const up = (e: RPointerEvent) => {
+    if (drag == null) return;
+    e.stopPropagation();
+    const n = at(e.clientX);
+    emit(n, true);
+    setDrag(null);
+  };
+  return (
+    <div
+      ref={ref}
+      className={`slider ${disabled ? "is-disabled" : ""} ${drag != null ? "is-dragging" : ""}`}
+      role="slider"
+      aria-label={ariaLabel}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={v}
+      onPointerDown={down}
+      onPointerMove={move}
+      onPointerUp={up}
+      onPointerCancel={up}
+    >
+      <div className="slider-track">
+        <div className="slider-fill" style={{ width: `${v}%` }} />
+      </div>
+      <div className="slider-knob" style={{ left: `${v}%` }} />
+    </div>
+  );
+}

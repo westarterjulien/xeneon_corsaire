@@ -1,7 +1,10 @@
 mod actions;
+mod apps;
+mod audio;
 mod calendar;
 mod config;
 mod display;
+mod ghub;
 mod gpu;
 mod keys;
 mod media;
@@ -27,6 +30,11 @@ pub fn run() {
             system::system_stats,
             system::sensors,
             gpu::gpu_stats,
+            audio::audio_state,
+            apps::installed_apps,
+            apps::app_icon,
+            ghub::ghub_batteries,
+            audio::audio_set,
             media::media_info,
             media::media_control,
             actions::run_action,

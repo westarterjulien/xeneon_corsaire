@@ -193,3 +193,13 @@ input, select, textarea { font: inherit; color: inherit; user-select: text; -web
 .stepper-ctl span { font-size: 20px; font-weight: 300; min-width: 24px; text-align: center; }
 .sizer-presets { display: flex; gap: 8px; flex-wrap: wrap; }
 .sizer-presets .chip:disabled { opacity: .35; }
+
+/* ---------- Curseur ---------- */
+.slider { position: relative; height: 44px; flex: 1; min-width: 60px; touch-action: none; cursor: pointer; display: flex; align-items: center; }
+.slider-track { position: relative; width: 100%; height: 3px; border-radius: 3px; background: rgba(255, 255, 255, .12); overflow: hidden; }
+.slider-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--text); border-radius: 3px; transition: width .15s; }
+.slider.is-dragging .slider-fill, .slider.is-dragging .slider-knob { transition: none; }
+.slider-knob { position: absolute; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .5); transition: left .15s, transform .15s; }
+.slider.is-dragging .slider-knob { transform: scale(1.25); }
+.slider.is-disabled { opacity: .35; }
+.slider.is-disabled .slider-fill { background: var(--muted); }

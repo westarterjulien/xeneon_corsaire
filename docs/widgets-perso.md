@@ -129,8 +129,8 @@ Chaque réglage a au minimum `key` (nom utilisé dans le code), `label` (texte a
 
 `play` `pause` `next` `prev` `volume` `volume-down` `mute` `mic` `mic-off` `camera` `folder` `globe` `chat`
 `calculator` `record` `clip` `layers` `gamepad` `music` `terminal` `home` `link` `arrow` `power` `lock` `edit`
-`settings` `close` `plus` `chevronLeft` `chevronRight` `clock` `activity` `zap` `sun` `moon` `partly` `cloud`
-`rain` `snow` `storm` `fog`
+`settings` `close` `plus` `chevronLeft` `chevronRight` `clock` `activity` `zap` `mouse` `keyboard` `headset`
+`battery` `grid` `sliders` `sun` `moon` `partly` `cloud` `rain` `snow` `storm` `fog`
 
 (Elles servent pour la bibliothèque et les réglages de type `icon`. Dans ton HTML, tu utilises les images ou SVG de ton choix.)
 

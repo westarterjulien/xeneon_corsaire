@@ -18,6 +18,8 @@ serde_json = "1"
 sysinfo = "0.32"
 ureq = { version = "2", default-features = false, features = ["json", "native-tls"] }
 native-tls = "0.2"
+png = "0.17"
+tungstenite = "0.24"
 base64 = "0.22"
 tauri-plugin-autostart = "2"
 tauri-plugin-single-instance = "2"
@@ -28,7 +30,17 @@ windows = { version = "0.58", features = [
   "Foundation",
   "Media_Control",
   "Storage_Streams",
+  "Win32_Devices_FunctionDiscovery",
   "Win32_Foundation",
+  "Win32_Graphics_Gdi",
+  "Win32_Media_Audio",
+  "Win32_Media_Audio_Endpoints",
+  "Win32_System_Com",
+  "Win32_System_Com_StructuredStorage",
+  "Win32_System_Threading",
+  "Win32_System_Variant",
+  "Win32_UI_Shell",
+  "Win32_UI_Shell_PropertiesSystem",
   "Win32_Security_Cryptography",
   "Win32_System_Performance",
   "Win32_UI_Input_KeyboardAndMouse",

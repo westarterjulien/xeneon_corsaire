@@ -1,0 +1,16 @@
+.bat { height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 16px; padding: 0 28px; }
+.bat-empty { gap: 10px; }
+.bat-help { color: var(--muted); font-weight: 300; font-size: clamp(14px, 4cqh, 19px); }
+.bat-list { display: flex; flex-direction: column; gap: clamp(8px, 3.4cqh, 22px); }
+.bat-row { display: flex; align-items: center; gap: 18px; min-width: 0; }
+.bat-icon { width: 26px !important; height: 26px !important; color: var(--muted); flex-shrink: 0; }
+.bat-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.bat-name { display: flex; align-items: center; gap: 8px; font-size: clamp(14px, 3.8cqh, 18px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bat-bolt { width: 15px !important; height: 15px !important; color: #7ee0a1; flex-shrink: 0; }
+.bat-track { height: 3px; border-radius: 3px; background: rgba(255, 255, 255, .1); overflow: hidden; }
+.bat-track > i { display: block; height: 100%; border-radius: 3px; background: var(--text); transition: width .8s ease; }
+.bat-row.is-charging .bat-track > i { background: #7ee0a1; }
+.bat-row.is-low .bat-track > i { background: var(--danger); }
+.bat-row.is-low .bat-pct, .bat-row.is-low .bat-icon { color: var(--danger); }
+.bat-pct { font-size: clamp(22px, 7cqh, 36px); font-weight: 200; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.bat-pct small { font-size: .45em; color: var(--faint); margin-left: 2px; }
