@@ -14,7 +14,23 @@ use std::{
 };
 use tauri::{AppHandle, Manager};
 
-const SCOPES: [&str; 3] = ["rpc", "rpc.voice.read", "rpc.voice.write"];
+const SCOPES: [&str; 4] = ["rpc", "rpc.voice.read", "rpc.voice.write", "rpc.notifications.read"];
+const NOTIF_SCOPE: &str = "rpc.notifications.read";
+const MAX_NOTIFS: usize = 8;
+
+/// Message reçu (notification Discord), gardé en mémoire uniquement.
+#[derive(Serialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Notif {
+    id: u64,
+    channel_id: String,
+    title: String,
+    body: String,
+    icon: Option<String>,
+    /// ms depuis 1970.
+    at: u64,
+    unread: bool,
+}
 const REDIRECT: &str = "http://127.0.0.1";
 
 #[derive(Serialize, Deserialize, Clone, Default)]
@@ -40,12 +56,17 @@ pub struct DiscordStatus {
     deaf: bool,
     user: Option<String>,
     error: Option<String>,
+    /// Autorisation à renouveler pour la nouvelle permission « notifications ».
+    needs_upgrade: bool,
+    /// Derniers messages reçus, du plus récent au plus ancien.
+    messages: Vec<Notif>,
 }
 
 enum Cmd {
     Reload,
     Authorize,
     Set { mute: Option<bool>, deaf: Option<bool> },
+    Open { channel_id: String },
 }
 
 static STATUS: Mutex<Option<DiscordStatus>> = Mutex::new(None);
@@ -133,6 +154,22 @@ pub fn discord_authorize() -> Result<(), String> {
 #[tauri::command]
 pub fn discord_set(mute: Option<bool>, deaf: Option<bool>) -> Result<(), String> {
     send_cmd(Cmd::Set { mute, deaf })
+}
+
+/// Ouvre la conversation dans Discord et marque le message comme lu.
+#[tauri::command]
+pub fn discord_open(channel_id: String) -> Result<(), String> {
+    if !valid_id(&channel_id) {
+        return Err("conversation invalide".into());
+    }
+    status(|s| s.messages.iter_mut().filter(|m| m.channel_id == channel_id).for_each(|m| m.unread = false));
+    send_cmd(Cmd::Open { channel_id })
+}
+
+/// Efface les messages affichés.
+#[tauri::command]
+pub fn discord_clear() {
+    status(|s| s.messages.clear());
 }
 
 #[tauri::command]
@@ -252,11 +289,29 @@ mod imp {
     }
 
     fn handle_event(v: &Value) {
-        if v.get("evt").and_then(Value::as_str) == Some("VOICE_SETTINGS_UPDATE") {
-            if let Some(d) = v.get("data") {
-                apply_voice(d);
-            }
+        let Some(d) = v.get("data") else { return };
+        match v.get("evt").and_then(Value::as_str) {
+            Some("VOICE_SETTINGS_UPDATE") => apply_voice(d),
+            Some("NOTIFICATION_CREATE") => push_notif(d),
+            _ => {}
         }
+    }
+
+    fn push_notif(d: &Value) {
+        let s = |k: &str| d.get(k).and_then(Value::as_str).unwrap_or_default().to_string();
+        let channel_id = s("channel_id");
+        if channel_id.is_empty() {
+            return;
+        }
+        let at = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|t| t.as_millis() as u64).unwrap_or(0);
+        let icon = d.get("icon_url").and_then(Value::as_str).filter(|u| u.starts_with("https://")).map(str::to_owned);
+        status(|st| {
+            let id = st.messages.iter().map(|m| m.id).max().unwrap_or(0) + 1;
+            // Une ligne par conversation : le nouveau message remplace l'ancien.
+            st.messages.retain(|m| m.channel_id != channel_id);
+            st.messages.insert(0, Notif { id, channel_id, title: s("title"), body: s("body").chars().take(300).collect(), icon, at, unread: true });
+            st.messages.truncate(MAX_NOTIFS);
+        });
     }
 
     /// Attend une commande de l'interface pendant `d` ; renvoie Reload si demandé.
@@ -295,10 +350,35 @@ mod imp {
         }
     }
 
+    /// Nom du compte et permissions réellement accordées (une ancienne autorisation n'a pas les notifications).
+    fn on_auth(d: &Value) {
+        let has_notifs = d.get("scopes").and_then(Value::as_array).map(|a| a.iter().any(|x| x.as_str() == Some(NOTIF_SCOPE))).unwrap_or(false);
+        status(|s| {
+            s.user = d.pointer("/user/username").and_then(Value::as_str).map(str::to_owned);
+            s.needs_upgrade = !has_notifs;
+        });
+    }
+
+    fn authorize(app: &AppHandle, pipe: &mut Pipe, creds: &mut Creds) -> Result<bool, String> {
+        status(|s| {
+            s.waiting = true;
+            s.error = None;
+        });
+        // Discord affiche sa fenêtre d'autorisation : on laisse 2 minutes pour accepter.
+        let r = pipe.request("AUTHORIZE", json!({ "client_id": creds.client_id, "scopes": SCOPES }), None, Duration::from_secs(120));
+        status(|s| s.waiting = false);
+        let code = r?.get("code").and_then(Value::as_str).ok_or("autorisation refusée")?.to_string();
+        let (a, rt) = token(creds, &[("grant_type", "authorization_code"), ("code", &code), ("redirect_uri", REDIRECT)])?;
+        creds.access_token = Some(a);
+        creds.refresh_token = rt;
+        save(app, creds)?;
+        authenticate(app, pipe, creds)
+    }
+
     fn authenticate(app: &AppHandle, pipe: &mut Pipe, creds: &mut Creds) -> Result<bool, String> {
         let Some(access) = creds.access_token.clone() else { return Ok(false) };
         if let Ok(d) = pipe.request("AUTHENTICATE", json!({ "access_token": access }), None, Duration::from_secs(10)) {
-            status(|s| s.user = d.pointer("/user/username").and_then(Value::as_str).map(str::to_owned));
+            on_auth(&d);
             return Ok(true);
         }
         // Jeton expiré : rafraîchissement, sinon nouvelle autorisation nécessaire.
@@ -309,7 +389,7 @@ mod imp {
                 creds.refresh_token = r.or(Some(refresh));
                 save(app, creds)?;
                 let d = pipe.request("AUTHENTICATE", json!({ "access_token": a }), None, Duration::from_secs(10))?;
-                status(|s| s.user = d.pointer("/user/username").and_then(Value::as_str).map(str::to_owned));
+                on_auth(&d);
                 Ok(true)
             }
             Err(_) => {
@@ -346,26 +426,20 @@ mod imp {
             while let Ok(c) = rx.try_recv() {
                 match c {
                     Cmd::Reload => return Ok(()),
-                    Cmd::Authorize if !authed => {
-                        status(|s| {
-                            s.waiting = true;
-                            s.error = None;
-                        });
-                        // Discord affiche sa fenêtre d'autorisation : on laisse 2 minutes pour accepter.
-                        let r = pipe.request("AUTHORIZE", json!({ "client_id": creds.client_id, "scopes": SCOPES }), None, Duration::from_secs(120));
-                        status(|s| s.waiting = false);
-                        let code = r?.get("code").and_then(Value::as_str).ok_or("autorisation refusée")?.to_string();
-                        let (a, rt) = token(&creds, &[("grant_type", "authorization_code"), ("code", &code), ("redirect_uri", REDIRECT)])?;
-                        creds.access_token = Some(a);
-                        creds.refresh_token = rt;
-                        save(app, &creds)?;
-                        authed = authenticate(app, pipe, &mut creds)?;
+                    // Première autorisation, ou nouvelle autorisation pour ajouter la permission « notifications ».
+                    Cmd::Authorize if !authed || needs_upgrade() => {
+                        authed = authorize(app, pipe, &mut creds)?;
                         status(|s| s.authorized = authed);
                         if authed {
                             subscribe(pipe)?;
                         }
                     }
                     Cmd::Authorize => {}
+                    Cmd::Open { channel_id } if authed => {
+                        // Affiche la conversation dans Discord (salon de serveur ou message privé).
+                        let _ = pipe.request("SELECT_TEXT_CHANNEL", json!({ "channel_id": channel_id }), None, Duration::from_secs(5));
+                    }
+                    Cmd::Open { .. } => {}
                     Cmd::Set { mute, deaf } if authed => {
                         let mut args = json!({});
                         if let Some(m) = mute {
@@ -389,10 +463,23 @@ mod imp {
         }
     }
 
+    fn needs_upgrade() -> bool {
+        STATUS.lock().ok().and_then(|g| g.as_ref().map(|s| s.needs_upgrade)).unwrap_or(false)
+    }
+
     fn subscribe(pipe: &mut Pipe) -> Result<(), String> {
         let d = pipe.request("GET_VOICE_SETTINGS", json!({}), None, Duration::from_secs(5))?;
         apply_voice(&d);
         pipe.request("SUBSCRIBE", json!({}), Some("VOICE_SETTINGS_UPDATE"), Duration::from_secs(5))?;
+        if !needs_upgrade() {
+            // Messages reçus (si l'utilisateur a accordé la permission « notifications »).
+            if let Err(e) = pipe.request("SUBSCRIBE", json!({}), Some("NOTIFICATION_CREATE"), Duration::from_secs(5)) {
+                status(|s| {
+                    s.needs_upgrade = true;
+                    s.error = Some(format!("messages indisponibles : {e}"));
+                });
+            }
+        }
         Ok(())
     }
 }

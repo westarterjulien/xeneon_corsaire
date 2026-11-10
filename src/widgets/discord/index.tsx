@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { bridge, type AudioState, type DiscordStatus } from "../../bridge";
 import { Kicker } from "../../sdk/components";
-import { useShared } from "../../sdk/hooks";
+import { useNow, useShared } from "../../sdk/hooks";
 import { Icon } from "../../sdk/icons";
 import type { SettingEditorProps } from "../../sdk/types";
 import { defineWidget } from "../../sdk/types";
@@ -9,6 +9,7 @@ import "./discord.css";
 
 interface Settings {
   mode: "rpc" | "keys";
+  showMessages: boolean;
   deafenKeys: string;
   muteKeys: string;
 }
@@ -59,7 +60,7 @@ function DiscordConnection(_: SettingEditorProps) {
   );
 }
 
-function Buttons({ mic, deaf, onMic, onDeaf, micLabel }: { mic: boolean; deaf: boolean; onMic: () => void; onDeaf: () => void; micLabel?: string }) {
+function Buttons({ mic, deaf, onMic, onDeaf, micLabel, unread = 0 }: { mic: boolean; deaf: boolean; onMic: () => void; onDeaf: () => void; micLabel?: string; unread?: number }) {
   const [flash, setFlash] = useState<string | null>(null);
   const tap = (k: string, fn: () => void) => () => {
     setFlash(k);
@@ -77,15 +78,61 @@ function Buttons({ mic, deaf, onMic, onDeaf, micLabel }: { mic: boolean; deaf: b
         <span className="dsc-label">{deaf ? "Sourdine" : "Casque"}</span>
       </button>
       <button className={`dsc-btn ${flash === "open" ? "is-flash" : ""}`} onClick={tap("open", () => void bridge.runAction({ kind: "open", target: "discord://" }))}>
-        <span className="dsc-circle"><Icon name="chat" /></span>
-        <span className="dsc-label">Ouvrir</span>
+        <span className="dsc-circle">
+          <Icon name="chat" />
+          {unread > 0 && <span className="dsc-badge">{unread}</span>}
+        </span>
+        <span className="dsc-label">{unread > 0 ? `${unread} nouveau${unread > 1 ? "x" : ""}` : "Ouvrir"}</span>
       </button>
     </div>
   );
 }
 
+function ago(at: number, now: number) {
+  const m = Math.round((now - at) / 60000);
+  if (m < 1) return "maintenant";
+  if (m < 60) return `${m} min`;
+  const h = Math.round(m / 60);
+  return h < 24 ? `${h} h` : `${Math.round(h / 24)} j`;
+}
+
+/** Derniers messages reçus (notifications Discord) : un toucher ouvre la conversation. */
+function Messages({ st, max }: { st: DiscordStatus; max: number }) {
+  const now = useNow(30_000).getTime();
+  if (st.needsUpgrade) {
+    return (
+      <div className="dsc-msgs">
+        <button className="dsc-upgrade" onClick={() => bridge.discordAuthorize()}>
+          {st.waiting ? "Accepte la fenêtre dans Discord…" : "Autoriser l'affichage des messages"}
+        </button>
+      </div>
+    );
+  }
+  const list = st.messages.slice(0, max);
+  if (!list.length) return <div className="dsc-msgs dsc-none">Aucun nouveau message</div>;
+  const open = (channelId: string) => {
+    void bridge.discordOpen(channelId);
+    void bridge.runAction({ kind: "open", target: "discord://" });
+  };
+  return (
+    <div className="dsc-msgs">
+      {list.map((m) => (
+        <button key={m.id} className={`dsc-m ${m.unread ? "is-unread" : ""}`} onClick={() => open(m.channelId)}>
+          {m.icon ? <img className="dsc-av" src={m.icon} alt="" draggable={false} /> : <span className="dsc-av dsc-av-letter">{m.title.replace(/^#/, "").charAt(0).toUpperCase()}</span>}
+          <span className="dsc-m-text">
+            <span className="dsc-m-title">{m.title}</span>
+            <span className="dsc-m-body">{m.body}</span>
+          </span>
+          <span className="dsc-m-time">{ago(m.at, now)}</span>
+          {m.unread && <span className="dsc-unread" />}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /** Mode direct : état réel de Discord, synchronisé dans les deux sens. */
-function Direct() {
+function Direct({ showMessages, rows }: { showMessages: boolean; rows: number }) {
   const { value: st } = useShared<DiscordStatus>("discord", bridge.discordStatus, 700);
   const [local, setLocal] = useState<{ mute?: boolean; deaf?: boolean; at: number } | null>(null);
   if (!st) return null;
@@ -103,8 +150,10 @@ function Direct() {
   const fresh = local && Date.now() - local.at < 1500 ? local : null;
   const mute = fresh?.mute ?? st.mute;
   const deaf = fresh?.deaf ?? st.deaf;
-  return (
+  const unread = st.messages.filter((m) => m.unread).length;
+  const buttons = (
     <Buttons
+      unread={showMessages && rows < 3 ? unread : 0}
       mic={mute || deaf}
       deaf={deaf}
       onMic={() => {
@@ -116,6 +165,13 @@ function Direct() {
         void bridge.discordSet({ deaf: !deaf });
       }}
     />
+  );
+  if (!showMessages || rows < 3) return buttons;
+  return (
+    <div className="dsc-split">
+      {buttons}
+      <Messages st={st} max={rows >= 4 ? 3 : 2} />
+    </div>
   );
 }
 
@@ -144,7 +200,7 @@ export default defineWidget<Settings>({
   name: "Discord",
   description: "Micro et sourdine de Discord, synchronisés avec l'appli.",
   icon: "chat",
-  defaultSize: { w: 3, h: 2 },
+  defaultSize: { w: 4, h: 4 },
   minSize: { w: 2, h: 1 },
   settings: [
     {
@@ -158,13 +214,14 @@ export default defineWidget<Settings>({
       ],
     },
     { key: "connection", label: "Connexion à Discord", type: "custom", editor: DiscordConnection },
+    { key: "showMessages", label: "Afficher les derniers messages reçus", type: "boolean", default: true, help: "Messages privés et mentions, selon tes notifications Discord. Visibles quand le widget fait 3 cases de haut ou plus ; sinon, un badge compte les nouveaux." },
     { key: "muteKeys", label: "Mode raccourcis : touche « micro » de Discord", type: "text", default: "", placeholder: "vide = couper le micro de Windows" },
     { key: "deafenKeys", label: "Mode raccourcis : touche « sourdine » de Discord", type: "text", default: "ctrl+shift+d" },
   ],
-  component: ({ settings }) => (
+  component: ({ settings, size }) => (
     <div className="dsc">
       <Kicker>Discord</Kicker>
-      {settings.mode === "keys" ? <Keys s={settings} /> : <Direct />}
+      {settings.mode === "keys" ? <Keys s={settings} /> : <Direct showMessages={settings.showMessages !== false} rows={size.h} />}
     </div>
   ),
 });

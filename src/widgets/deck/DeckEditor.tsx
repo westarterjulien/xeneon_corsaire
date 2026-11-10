@@ -282,7 +282,7 @@ export function DeckEditor({ value, onChange }: SettingEditorProps) {
         <button type="button" className="sce-add" onClick={() => add(true)}><Icon name="folder" /> Dossier</button>
         <button
           type="button"
-          className="sce-add"
+          className="sce-add dke-sharex"
           onClick={async () => {
             const path = (await bridge.sharexPath().catch(() => null)) ?? "%ProgramFiles%\\ShareX\\ShareX.exe";
             const f = sharexFolder(path);
@@ -290,7 +290,7 @@ export function DeckEditor({ value, onChange }: SettingEditorProps) {
             setSel(f.id);
           }}
         >
-          <Icon name="camera" /> Dossier ShareX
+          <Icon name="camera" /> Ajouter un dossier ShareX (captures, vidéo, GIF, OCR)
         </button>
       </div>
 

@@ -54,6 +54,8 @@ pub fn run() {
             discord::discord_authorize,
             discord::discord_set,
             discord::discord_forget,
+            discord::discord_open,
+            discord::discord_clear,
             audio::audio_set,
             media::media_info,
             media::media_control,

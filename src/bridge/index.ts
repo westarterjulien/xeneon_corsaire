@@ -131,6 +131,18 @@ export interface DiscordStatus {
   deaf: boolean;
   user: string | null;
   error: string | null;
+  needsUpgrade: boolean;
+  messages: DiscordMessage[];
+}
+
+export interface DiscordMessage {
+  id: number;
+  channelId: string;
+  title: string;
+  body: string;
+  icon: string | null;
+  at: number;
+  unread: boolean;
 }
 
 export interface MonitorInfo {
@@ -242,7 +254,14 @@ const mockHa: HaEntity[] = [
   { entityId: "sensor.temperature_bureau", domain: "sensor", name: "Température bureau", state: "21.4", unit: "°C", deviceClass: "temperature" },
   { entityId: "sensor.humidite_bureau", domain: "sensor", name: "Humidité bureau", state: "48", unit: "%", deviceClass: "humidity" },
 ];
-const mockDiscord: DiscordStatus = { configured: true, running: true, authorized: true, waiting: false, mute: false, deaf: false, user: "simulation", error: null };
+const mockDiscord: DiscordStatus = {
+  configured: true, running: true, authorized: true, waiting: false, mute: false, deaf: false, user: "simulation", error: null, needsUpgrade: false,
+  messages: [
+    { id: 3, channelId: "1", title: "Thomas", body: "On lance une partie à 21h ? Ramène le casque 😄", icon: null, at: Date.now() - 120_000, unread: true },
+    { id: 2, channelId: "2", title: "#général (Westarter)", body: "Léa : la démo est en ligne, vos retours avant demain svp", icon: null, at: Date.now() - 900_000, unread: true },
+    { id: 1, channelId: "3", title: "Camille", body: "Merci pour hier !", icon: null, at: Date.now() - 3_600_000, unread: false },
+  ],
+};
 const t0 = Date.now();
 const wave = (period: number, phase = 0) => (Math.sin(((Date.now() - t0) / period) * Math.PI * 2 + phase) + 1) / 2;
 const jitter = (n: number) => (Math.random() - 0.5) * n;
@@ -444,6 +463,14 @@ export const bridge = {
   discordSet: async (change: { mute?: boolean; deaf?: boolean }): Promise<void> => {
     if (isTauri) return call("discord_set", { mute: change.mute ?? null, deaf: change.deaf ?? null });
     Object.assign(mockDiscord, change);
+  },
+  discordOpen: async (channelId: string): Promise<void> => {
+    if (isTauri) return call("discord_open", { channelId });
+    mockDiscord.messages = mockDiscord.messages.map((m) => (m.channelId === channelId ? { ...m, unread: false } : m));
+  },
+  discordClear: async (): Promise<void> => {
+    if (isTauri) return call("discord_clear");
+    mockDiscord.messages = [];
   },
   discordForget: (): Promise<void> => (isTauri ? call("discord_forget") : Promise.resolve()),
 
