@@ -23,12 +23,14 @@ tauri-plugin-autostart = "2"
 tauri-plugin-single-instance = "2"
 
 [target.'cfg(windows)'.dependencies]
+nvml-wrapper = "0.13"
 windows = { version = "0.58", features = [
   "Foundation",
   "Media_Control",
   "Storage_Streams",
   "Win32_Foundation",
   "Win32_Security_Cryptography",
+  "Win32_System_Performance",
   "Win32_UI_Input_KeyboardAndMouse",
   "Win32_UI_WindowsAndMessaging",
 ] }

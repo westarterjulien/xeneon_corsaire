@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { bridge, userWidgetBase, type UserWidgetManifest } from "../bridge";
-import { useMedia, useSensors, useSystemStats } from "../sdk/hooks";
+import { useGpu, useMedia, useSensors, useSystemStats } from "../sdk/hooks";
 import { usePages } from "../sdk/page";
 import { setUserWidgets, USER_PREFIX } from "../sdk/registry";
 import { useTheme } from "../sdk/theme";
@@ -71,6 +71,11 @@ function SystemFeed({ send }: { send: Send }) {
   useEffect(() => void (value && send("system", value)), [value]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
+function GpuFeed({ send }: { send: Send }) {
+  const { value } = useGpu();
+  useEffect(() => send("gpu", value ?? null), [value]); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+}
 function MediaFeed({ send }: { send: Send }) {
   const { value } = useMedia();
   useEffect(() => send("media", value ?? null), [value]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -84,6 +89,7 @@ function SensorsFeed({ send, url }: { send: Send; url: string }) {
 
 interface Topics {
   system?: boolean;
+  gpu?: boolean;
   media?: boolean;
   sensors?: string;
 }
@@ -121,7 +127,7 @@ function UserWidgetFrame({ manifest, revision, settings, size: cells, editing, u
           send("settings", L.settings);
           break;
         case "subscribe":
-          if (m.topic === "system" || m.topic === "media") setTopics((t) => ({ ...t, [m.topic!]: true }));
+          if (m.topic === "system" || m.topic === "gpu" || m.topic === "media") setTopics((t) => ({ ...t, [m.topic!]: true }));
           if (m.topic === "sensors") setTopics((t) => ({ ...t, sensors: typeof m.url === "string" && m.url ? m.url : DEFAULT_LHM }));
           break;
         case "setSettings":
@@ -159,6 +165,7 @@ function UserWidgetFrame({ manifest, revision, settings, size: cells, editing, u
         </button>
       )}
       {topics.system && <SystemFeed send={send} />}
+      {topics.gpu && <GpuFeed send={send} />}
       {topics.media && <MediaFeed send={send} />}
       {topics.sensors && <SensorsFeed send={send} url={topics.sensors} />}
     </>

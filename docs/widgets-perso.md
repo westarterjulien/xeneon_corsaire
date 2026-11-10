@@ -183,6 +183,7 @@ Elle renvoie une fonction de désabonnement : `const stop = Edge.on(...); stop()
 | `theme` | démarrage + changement de couleurs | `{ accent: "#a9c4ff", background: "#07090c" }` |
 | `editing` | démarrage + entrée/sortie du mode édition | `true` / `false` |
 | `system` | chaque seconde | voir ci-dessous |
+| `gpu` | toutes les 2 s | `{ name, load, temp, vramUsed, vramTotal, source }` ou `null` (voir ci-dessous) |
 | `media` | chaque seconde | voir ci-dessous, ou `null` si rien ne joue |
 | `sensors` | toutes les 2 s | voir ci-dessous |
 
@@ -196,6 +197,19 @@ Elle renvoie une fonction de désabonnement : `const stop = Edge.on(...); stop()
   memTotal: 34359738368,     // RAM totale, en octets
   uptime: 86400,             // secondes depuis le démarrage de Windows
   hostname: "MON-PC"
+}
+```
+
+**`gpu`** : lu directement, sans logiciel externe.
+
+```js
+{
+  name: "NVIDIA GeForce RTX 4080",
+  load: 87,                  // charge 3D en %, ou null
+  temp: 64,                  // °C, NVIDIA uniquement (sinon null)
+  vramUsed: 12025908428,     // octets, NVIDIA uniquement
+  vramTotal: 17171480576,
+  source: "nvml"             // "nvml" (NVIDIA) ou "pdh" (compteurs Windows, AMD / Intel : charge seulement)
 }
 ```
 

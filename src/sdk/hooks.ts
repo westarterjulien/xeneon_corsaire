@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { bridge, type MediaInfo, type Sensor, type SystemStats } from "../bridge";
+import { bridge, type GpuStats, type MediaInfo, type Sensor, type SystemStats } from "../bridge";
 
 /**
  * Source de données partagée : plusieurs widgets abonnés à la même clé
@@ -61,6 +61,7 @@ export function useShared<T>(key: string, fetcher: () => Promise<T>, intervalMs 
 
 export const useSystemStats = () => useShared<SystemStats>("system", bridge.systemStats, 1000, 60);
 export const useSensors = (url: string) => useShared<Sensor[]>(`sensors:${url}`, () => bridge.sensors(url), 2000, 60);
+export const useGpu = () => useShared<GpuStats | null>("gpu", bridge.gpu, 2000);
 export const useMedia = () => useShared<MediaInfo | null>("media", bridge.media, 1000);
 
 /** Heure courante, rafraîchie à l'intervalle demandé. */

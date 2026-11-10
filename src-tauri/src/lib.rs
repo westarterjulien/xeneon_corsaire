@@ -2,6 +2,7 @@ mod actions;
 mod calendar;
 mod config;
 mod display;
+mod gpu;
 mod keys;
 mod media;
 mod studio;
@@ -25,6 +26,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             system::system_stats,
             system::sensors,
+            gpu::gpu_stats,
             media::media_info,
             media::media_control,
             actions::run_action,

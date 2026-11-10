@@ -7,6 +7,7 @@
  *   Edge.on("theme", t => …)       { accent, background } (appliqué aussi aux variables CSS)
  *   Edge.on("editing", b => …)     vrai pendant le mode édition
  *   Edge.on("system", s => …)      { cpu, cpuPerCore, memUsed, memTotal, uptime, hostname } chaque seconde
+ *   Edge.on("gpu", g => …)         { name, load, temp, vramUsed, vramTotal, source } toutes les 2 s (ou null)
  *   Edge.on("media", m => …)       lecture en cours { title, artist, album, playing, position, duration, thumbnail, source } ou null
  *   Edge.on("sensors", list => …)  capteurs LibreHardwareMonitor [{ path, name, value, unit }]
  *
@@ -22,7 +23,7 @@
   const state = {};
   const pending = new Map();
   let seq = 0;
-  const DATA_TOPICS = ["system", "media", "sensors"];
+  const DATA_TOPICS = ["system", "gpu", "media", "sensors"];
   const post = (msg) => parent.postMessage(Object.assign({ edge: 1 }, msg), "*");
 
   const applyTheme = (t) => {

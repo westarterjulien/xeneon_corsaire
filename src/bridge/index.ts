@@ -27,6 +27,16 @@ export interface Sensor {
   unit: string;
 }
 
+export interface GpuStats {
+  name: string;
+  load: number | null;
+  temp: number | null;
+  vramUsed: number | null;
+  vramTotal: number | null;
+  /** "nvml" (NVIDIA) ou "pdh" (compteurs Windows, toutes cartes). */
+  source: string;
+}
+
 export interface MediaInfo {
   title: string;
   artist: string;
@@ -188,6 +198,12 @@ export const bridge = {
   sensors: (url: string): Promise<Sensor[]> => (isTauri ? call("sensors", { url }) : Promise.resolve(mock.sensors())),
 
   media: (): Promise<MediaInfo | null> => (isTauri ? call("media_info") : Promise.resolve(mock.media())),
+
+  /** GPU lu directement (NVIDIA : charge, température, mémoire ; autres : charge). */
+  gpu: (): Promise<GpuStats | null> =>
+    isTauri
+      ? call("gpu_stats")
+      : Promise.resolve({ name: "NVIDIA GeForce RTX 4080", load: 30 + wave(12000) * 60, temp: 48 + wave(20000) * 20, vramUsed: 11.2 * 1024 ** 3, vramTotal: 16 * 1024 ** 3, source: "nvml" }),
 
   mediaControl: async (command: MediaCommand): Promise<void> => {
     if (isTauri) return call("media_control", { command });
