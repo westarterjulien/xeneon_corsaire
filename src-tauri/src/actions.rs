@@ -27,7 +27,7 @@ fn hidden(cmd: &mut Command) -> &mut Command {
     cmd
 }
 
-fn open(target: &str) -> Result<(), String> {
+pub fn open_target(target: &str) -> Result<(), String> {
     let mut cmd = if cfg!(windows) {
         let mut c = Command::new("cmd");
         // Le premier argument vide de `start` est le titre de la fenêtre.
@@ -61,7 +61,7 @@ fn shell(command: &str) -> Result<(), String> {
 #[tauri::command]
 pub async fn run_action(action: Action) -> Result<(), String> {
     match action {
-        Action::Open { target } => open(&target),
+        Action::Open { target } => open_target(&target),
         Action::Command { command } => shell(&command),
         Action::Keys { keys } => crate::keys::send_combo(&keys),
         Action::Media { command } => crate::media::control(&command),

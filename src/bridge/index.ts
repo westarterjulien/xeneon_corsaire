@@ -85,6 +85,51 @@ export function userWidgetBase(): string {
   return /Windows/i.test(navigator.userAgent) ? "http://edgewidget.localhost/" : "edgewidget://localhost/";
 }
 
+export interface CalendarStatus {
+  connected: boolean;
+  account: string | null;
+  userCode: string | null;
+  verificationUri: string | null;
+  error: string | null;
+}
+
+export interface CalendarEvent {
+  id: string;
+  subject: string;
+  /** ISO 8601 UTC. */
+  start: string;
+  end: string;
+  allDay: boolean;
+  location: string;
+  joinUrl: string | null;
+  webLink: string | null;
+  showAs: string;
+  cancelled: boolean;
+  organizer: string;
+}
+
+function mockEvents(): CalendarEvent[] {
+  const at = (dayOffset: number, h: number, m = 0) => {
+    const d = new Date();
+    d.setDate(d.getDate() + dayOffset);
+    d.setHours(h, m, 0, 0);
+    return d.toISOString();
+  };
+  const now = new Date();
+  const rel = (min: number) => new Date(now.getTime() + min * 60000).toISOString();
+  const ev = (id: string, subject: string, start: string, end: string, extra: Partial<CalendarEvent> = {}): CalendarEvent => ({
+    id, subject, start, end, allDay: false, location: "", joinUrl: null, webLink: null, showAs: "busy", cancelled: false, organizer: "", ...extra,
+  });
+  return [
+    ev("0", "Salon de la French Tech", at(0, 0), at(1, 0), { allDay: true, showAs: "free" }),
+    ev("1", "Point hebdo équipe produit", rel(-20), rel(10), { joinUrl: "https://teams.microsoft.com/l/meetup-join/simulation" }),
+    ev("2", "Revue de la refonte du site", rel(55), rel(115), { location: "Salle Rivoli", joinUrl: "https://teams.microsoft.com/l/meetup-join/simulation" }),
+    ev("3", "Appel client — Groupe Delta", rel(180), rel(210), { joinUrl: "https://teams.microsoft.com/l/meetup-join/simulation" }),
+    ev("4", "Comité de direction", at(1, 9), at(1, 10, 30), { location: "Siège" }),
+    ev("5", "Déjeuner partenaires", at(1, 12, 30), at(1, 14)),
+  ];
+}
+
 // ---------- Simulation (mode navigateur) ----------
 const t0 = Date.now();
 const wave = (period: number, phase = 0) => (Math.sin(((Date.now() - t0) / period) * Math.PI * 2 + phase) + 1) / 2;
@@ -203,6 +248,16 @@ export const bridge = {
 
   autostartGet: (): Promise<boolean> => (isTauri ? call("autostart_get") : Promise.resolve(false)),
   autostartSet: (enabled: boolean): Promise<void> => (isTauri ? call("autostart_set", { enabled }) : Promise.resolve()),
+
+  // ---------- Agenda Microsoft 365 ----------
+  calendarStatus: (clientId: string, tenant: string): Promise<CalendarStatus> =>
+    isTauri
+      ? call("calendar_status", { clientId, tenant })
+      : Promise.resolve({ connected: true, account: "simulation@entreprise.fr", userCode: null, verificationUri: null, error: null }),
+  calendarConnect: (clientId: string, tenant: string): Promise<CalendarStatus> => call("calendar_connect", { clientId, tenant }),
+  calendarDisconnect: (): Promise<void> => (isTauri ? call("calendar_disconnect") : Promise.resolve()),
+  calendarEvents: (clientId: string, tenant: string, start: string, end: string): Promise<CalendarEvent[]> =>
+    isTauri ? call("calendar_events", { clientId, tenant, start, end }) : Promise.resolve(mockEvents()),
 
   /** Masque (ou réaffiche) la barre des tâches Windows sur l'écran de l'Edge. */
   taskbarSet: (hidden: boolean): Promise<void> => (isTauri ? call("taskbar_set", { hidden }) : Promise.resolve()),

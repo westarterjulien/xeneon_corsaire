@@ -18,6 +18,7 @@ Application **Tauri 2** (backend Rust + interface React/TypeScript), légère et
 | Lecteur média | Lecture en cours de Windows (Spotify, navigateurs, VLC…), pochette, contrôles, volume |
 | Raccourcis | Ouvrir appli/URL/protocole, combinaisons de touches, commandes, changement de page |
 | Page web | Intègre Home Assistant, Grafana, etc. |
+| Agenda | Réunions Microsoft 365 / Outlook, prochain rendez-vous, bouton Rejoindre Teams ([mise en route](docs/agenda-microsoft365.md)) |
 
 ## Installer (rien à configurer)
 
@@ -130,6 +131,8 @@ src-tauri/src/
   actions.rs         ouvrir / commande / touches / média
   config.rs          lecture/écriture de la configuration
   user_widgets.rs    widgets perso : liste, création, protocole edgewidget://
+  calendar.rs        agenda Microsoft 365 (Graph, connexion par code, jeton chiffré DPAPI)
+  taskbar.rs         masquage de la barre des tâches Windows sur l'Edge
   studio.rs          fenêtre Studio + icône de la zone de notification
 src/studio/          interface du Studio (studio.html)
 src/core/store.ts    configuration partagée + synchronisation Edge ↔ Studio (sync.ts)

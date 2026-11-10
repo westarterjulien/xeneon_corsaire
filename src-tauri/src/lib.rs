@@ -1,4 +1,5 @@
 mod actions;
+mod calendar;
 mod config;
 mod display;
 mod keys;
@@ -37,6 +38,10 @@ pub fn run() {
             config::autostart_get,
             config::autostart_set,
             taskbar::taskbar_set,
+            calendar::calendar_status,
+            calendar::calendar_connect,
+            calendar::calendar_disconnect,
+            calendar::calendar_events,
         ])
         .setup(|app| {
             let window = app.get_webview_window("main").expect("fenêtre principale absente");
