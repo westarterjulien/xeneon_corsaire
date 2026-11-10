@@ -37,6 +37,18 @@ pub fn control(command: &str) -> Result<(), String> {
     crate::keys::send_combo(key)
 }
 
+/// Type d'image d'après ses premiers octets (None si ce n'est pas une image affichable).
+pub fn sniff_image(b: &[u8]) -> Option<&'static str> {
+    match b {
+        [0x89, b'P', b'N', b'G', ..] => Some("image/png"),
+        [0xFF, 0xD8, 0xFF, ..] => Some("image/jpeg"),
+        [b'G', b'I', b'F', b'8', ..] => Some("image/gif"),
+        [b'R', b'I', b'F', b'F', _, _, _, _, b'W', b'E', b'B', b'P', ..] => Some("image/webp"),
+        [b'B', b'M', ..] => Some("image/bmp"),
+        _ => None,
+    }
+}
+
 #[tauri::command]
 pub async fn media_info() -> Result<Option<MediaInfo>, String> {
     #[cfg(windows)]
@@ -54,6 +66,20 @@ pub async fn media_info() -> Result<Option<MediaInfo>, String> {
 #[tauri::command]
 pub async fn media_control(command: String) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || control(&command)).await.map_err(|e| e.to_string())?
+}
+
+#[cfg(test)]
+mod tests {
+    use super::sniff_image;
+
+    #[test]
+    fn sniffs() {
+        assert_eq!(sniff_image(&[0x89, b'P', b'N', b'G', 0x0D]), Some("image/png"));
+        assert_eq!(sniff_image(&[0xFF, 0xD8, 0xFF, 0xE0]), Some("image/jpeg"));
+        assert_eq!(sniff_image(b"RIFF\x00\x00\x00\x00WEBPVP8"), Some("image/webp"));
+        assert_eq!(sniff_image(b"<html>"), None);
+        assert_eq!(sniff_image(&[]), None);
+    }
 }
 
 #[cfg(windows)]
@@ -92,13 +118,18 @@ mod win {
             if size == 0 || size > 8 * 1024 * 1024 {
                 return Ok(None);
             }
-            let content_type = stream.ContentType().map(|s| s.to_string()).unwrap_or_else(|_| "image/png".into());
             let reader = DataReader::CreateDataReader(&stream)?;
-            reader.LoadAsync(size)?.get()?;
-            let mut buf = vec![0u8; size as usize];
+            // Le flux peut livrer moins d'octets qu'annoncé : on ne lit que ce qui a été chargé.
+            let loaded = reader.LoadAsync(size)?.get()?;
+            if loaded == 0 {
+                return Ok(None);
+            }
+            let mut buf = vec![0u8; loaded as usize];
             reader.ReadBytes(&mut buf)?;
+            // Le type annoncé par certaines applis (Plex…) est faux ou vide : on se fie au contenu réel.
+            let Some(mime) = super::sniff_image(&buf) else { return Ok(None) };
             let b64 = base64::engine::general_purpose::STANDARD.encode(&buf);
-            Ok(Some(format!("data:{};base64,{b64}", if content_type.is_empty() { "image/png" } else { &content_type })))
+            Ok(Some(format!("data:{mime};base64,{b64}")))
         };
         let v = read().ok().flatten();
         if let Ok(mut cache) = THUMB_CACHE.lock() {

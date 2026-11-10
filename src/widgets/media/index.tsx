@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { bridge, type MediaCommand } from "../../bridge";
 import { defineWidget } from "../../sdk/types";
 import { useMedia } from "../../sdk/hooks";
@@ -10,11 +10,23 @@ interface Settings {
   showVolume: boolean;
 }
 
-/** "SpotifyAB.SpotifyMusic_zpdnekdrzrea0!Spotify" → "Spotify" */
-function sourceName(id: string) {
+/**
+ * Nom lisible de l'appli qui joue, à partir de son identifiant Windows :
+ * "SpotifyAB.SpotifyMusic_zpdnekdrzrea0!Spotify" → "Spotify", "Plex.exe" → "Plex".
+ */
+export function sourceName(id: string) {
   const s = id.toLowerCase();
-  const known: [string, string][] = [["spotify", "Spotify"], ["chrome", "Chrome"], ["msedge", "Edge"], ["firefox", "Firefox"], ["vlc", "VLC"], ["zune", "Lecteur multimédia"], ["music", "Musique"], ["deezer", "Deezer"], ["apple", "Apple Music"], ["youtube", "YouTube"]];
-  return known.find(([k]) => s.includes(k))?.[1] ?? (id.split(/[!.\\/]/).pop() || "");
+  const known: [string, string][] = [
+    ["plexamp", "Plexamp"], ["plex", "Plex"], ["spotify", "Spotify"], ["deezer", "Deezer"], ["tidal", "Tidal"], ["applemusic", "Apple Music"], ["itunes", "iTunes"],
+    ["chrome", "Chrome"], ["msedge", "Edge"], ["firefox", "Firefox"], ["308046b0af4a39cb", "Firefox"], ["opera", "Opera"], ["brave", "Brave"], ["vlc", "VLC"], ["mpc-hc", "MPC-HC"], ["potplayer", "PotPlayer"],
+    ["zunevideo", "Films et TV"], ["zunemusic", "Lecteur multimédia"], ["media.player", "Lecteur multimédia"], ["youtube", "YouTube"], ["netflix", "Netflix"], ["discord", "Discord"],
+  ];
+  const hit = known.find(([k]) => s.includes(k));
+  if (hit) return hit[1];
+  // Sinon : dernier segment, sans chemin ni extension .exe.
+  const last = id.split(/[!\\/]/).pop() ?? "";
+  const base = last.replace(/\.exe$/i, "").split(".").pop() ?? "";
+  return base ? base.charAt(0).toUpperCase() + base.slice(1) : "";
 }
 
 export default defineWidget<Settings>({
@@ -37,18 +49,23 @@ export default defineWidget<Settings>({
       }
     };
     const progress = m && m.duration > 0 ? Math.min(100, (m.position / m.duration) * 100) : 0;
+    // Pochette illisible : on revient à l'illustration par défaut.
+    const [badThumb, setBadThumb] = useState<string | null>(null);
+    useEffect(() => setBadThumb(null), [m?.title]);
     const source = m?.source ? sourceName(m.source) : "";
     return (
       <div className="media">
-        {m?.thumbnail ? (
-          <img className="media-art" src={m.thumbnail} alt="" />
+        {m?.thumbnail && badThumb !== m.thumbnail ? (
+          <img className="media-art" src={m.thumbnail} alt="" onError={() => setBadThumb(m.thumbnail)} />
         ) : (
           <div className="media-art media-art-empty"><Icon name="music" /></div>
         )}
         <div className="media-main">
           <Kicker>{m ? `En lecture${source ? ` · ${source}` : ""}` : "Lecture"}</Kicker>
           <div className="media-title">{m?.title || "Rien en lecture"}</div>
-          <div className="media-artist">{m ? m.artist || m.album : "Lance une musique ou une vidéo"}</div>
+          {(m ? m.artist || m.album : "Lance une musique ou une vidéo") && (
+            <div className="media-artist">{m ? m.artist || m.album : "Lance une musique ou une vidéo"}</div>
+          )}
           {m && m.duration > 0 && (
             <div className="media-progress">
               <div className="media-bar"><i style={{ width: `${progress}%` }} /></div>

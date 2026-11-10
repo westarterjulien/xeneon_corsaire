@@ -14,6 +14,8 @@
  *   Edge.keys("ctrl+shift+m")      Edge.command("…")      Edge.media("play_pause" | "next" | …)
  *   Edge.page(0)                   Edge.setSettings({ cle: valeur })
  * Toutes les actions renvoient une promesse (rejetée en cas d'échec).
+ * Les erreurs JavaScript non rattrapées s'affichent en bas du widget.
+ * Guide complet : docs/widgets-perso.md
  */
 (() => {
   const listeners = {};
@@ -74,6 +76,16 @@
     page: (page) => request({ kind: "page", page }),
     setSettings: (patch) => post({ type: "setSettings", patch }),
   };
+
+  // Erreurs du widget affichées sur l'Edge (sinon invisibles dans l'appli installée).
+  addEventListener("error", (e) => {
+    const where = e.filename ? ` (${e.filename.split("/").pop().split("?")[0]}:${e.lineno})` : "";
+    post({ type: "error", message: String(e.message || e.error || "erreur inconnue") + where });
+  });
+  addEventListener("unhandledrejection", (e) => {
+    const r = e.reason;
+    post({ type: "error", message: "Promesse rejetée : " + String((r && r.message) || r) });
+  });
 
   post({ type: "ready" });
 })();

@@ -97,6 +97,7 @@ function UserWidgetFrame({ manifest, revision, settings, size: cells, editing, u
   const theme = useTheme();
   const pages = usePages();
   const [topics, setTopics] = useState<Topics>({});
+  const [error, setError] = useState<string | null>(null);
   const latest = useRef({ settings, cells, theme, editing, updateSettings, pages });
   latest.current = { settings, cells, theme, editing, updateSettings, pages };
 
@@ -106,10 +107,13 @@ function UserWidgetFrame({ manifest, revision, settings, size: cells, editing, u
   useEffect(() => {
     const onMessage = async (e: MessageEvent) => {
       if (!ref.current || e.source !== ref.current.contentWindow) return;
-      const m = e.data as { edge?: number; type?: string; topic?: string; url?: string; id?: number; action?: any; patch?: unknown };
+      const m = e.data as { edge?: number; type?: string; topic?: string; url?: string; id?: number; action?: any; patch?: unknown; message?: unknown };
       if (!m || m.edge !== 1) return;
       const L = latest.current;
       switch (m.type) {
+        case "error":
+          setError(String(m.message ?? "erreur").slice(0, 300));
+          break;
         case "ready":
           send("theme", L.theme);
           send("size", L.cells);
@@ -149,6 +153,11 @@ function UserWidgetFrame({ manifest, revision, settings, size: cells, editing, u
   return (
     <>
       <iframe ref={ref} src={src} title={manifest.name || manifest.id} className="user-widget-frame" sandbox="allow-scripts" allow="autoplay" />
+      {error && (
+        <button className="uw-error" onClick={() => setError(null)} title="Toucher pour masquer">
+          <b>Erreur dans le widget</b> {error}
+        </button>
+      )}
       {topics.system && <SystemFeed send={send} />}
       {topics.media && <MediaFeed send={send} />}
       {topics.sensors && <SensorsFeed send={send} url={topics.sensors} />}

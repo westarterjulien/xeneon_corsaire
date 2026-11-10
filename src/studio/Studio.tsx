@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Grid } from "../core/Grid";
 import { createInstance, findFreeSpot, uid, type Page, type WidgetInstance } from "../core/layout";
-import { AppearanceForm, SettingsForm, WidgetLibrary } from "../core/Panels";
+import { AppearanceForm, SettingsForm, SizeControls, WidgetLibrary } from "../core/Panels";
 import { useAppConfig } from "../core/store";
 import { publish, subscribe } from "../core/sync";
 import { useUserWidgetsLoader } from "../core/userWidgets";
@@ -179,6 +179,9 @@ export default function Studio() {
                   <button className="st-btn danger" onClick={() => { updatePage(page.widgets.filter((w) => w.id !== sel.id)); setSelected(null); }}><Icon name="close" /> Retirer</button>
                   <button className="st-btn" onClick={() => setSelected(null)}>Fermer</button>
                 </div>
+                <div className="kicker st-section">Taille et position</div>
+                <SizeControls page={page} instance={sel} onLayout={updatePage} />
+                <div className="kicker st-section">Réglages</div>
                 <SettingsForm
                   key={sel.id}
                   def={selDef}

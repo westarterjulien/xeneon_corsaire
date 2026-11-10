@@ -124,6 +124,8 @@ input, select, textarea { font: inherit; color: inherit; user-select: text; -web
 
 /* ---------- Widgets perso ---------- */
 .user-widget-frame { display: block; width: 100%; height: 100%; border: 0; background: transparent; color-scheme: dark; }
+.uw-error { position: absolute; left: 12px; right: 12px; bottom: 12px; text-align: left; padding: 10px 14px; border-radius: 12px; background: rgba(40, 8, 8, .92); border: 1px solid color-mix(in srgb, var(--danger) 50%, transparent); color: #ffd6d6; font-size: 13px; line-height: 1.4; font-family: ui-monospace, Consolas, monospace; max-height: 60%; overflow: hidden; }
+.uw-error b { color: var(--danger); font-family: "Inter Variable", sans-serif; font-weight: 600; margin-right: 6px; }
 
 /* ---------- Palette : sections ---------- */
 .palette-section { display: flex; align-items: center; justify-content: space-between; margin: 26px 0 12px; font-size: 13px; letter-spacing: .2em; text-transform: uppercase; color: var(--faint); }
@@ -177,3 +179,17 @@ input, select, textarea { font: inherit; color: inherit; user-select: text; -web
 .city-result { display: flex; justify-content: space-between; gap: 16px; padding: 14px 4px; border-bottom: 1px solid var(--line); text-align: left; font-size: 18px; }
 .city-result:active { background: var(--hover); }
 .city-region { color: var(--faint); font-size: 14px; }
+
+/* ---------- Taille et position ---------- */
+.sizer-title { display: block; margin: 6px 0 12px; }
+.sizer-title ~ .sizer-title { margin-top: 30px; }
+.sizer { display: flex; flex-direction: column; gap: 14px; }
+.sizer-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.stepper { display: flex; flex-direction: column; gap: 6px; }
+.stepper-ctl { display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(255, 255, 255, .14); border-radius: 999px; padding: 4px; }
+.stepper-ctl button { width: 44px; height: 44px; border-radius: 50%; font-size: 22px; font-weight: 300; }
+.stepper-ctl button:active:not(:disabled) { background: var(--hover); }
+.stepper-ctl button:disabled { opacity: .25; }
+.stepper-ctl span { font-size: 20px; font-weight: 300; min-width: 24px; text-align: center; }
+.sizer-presets { display: flex; gap: 8px; flex-wrap: wrap; }
+.sizer-presets .chip:disabled { opacity: .35; }

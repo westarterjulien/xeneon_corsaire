@@ -147,9 +147,7 @@ export function Grid({ page, editing, onChange, onOpenSettings, onLongPressEmpty
                   {def?.name ?? w.type}
                 </div>
                 <div className="widget-edit-actions" onPointerDown={(e) => e.stopPropagation()}>
-                  {!!def?.settings?.length && (
-                    <button className="icon-btn" onClick={() => onOpenSettings(w.id)} aria-label="Réglages"><Icon name="settings" /></button>
-                  )}
+                  <button className="icon-btn" onClick={() => onOpenSettings(w.id)} aria-label="Réglages"><Icon name="settings" /></button>
                   <button className="icon-btn danger" onClick={() => remove(w.id)} aria-label="Supprimer"><Icon name="close" /></button>
                 </div>
                 <div

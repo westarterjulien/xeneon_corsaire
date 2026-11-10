@@ -4,7 +4,7 @@ import { Icon } from "../sdk/icons";
 import { isUserWidget, useRegistryVersion, useUserWidgetsInfo, widgetRegistry } from "../sdk/registry";
 import type { SettingField, WidgetDefinition } from "../sdk/types";
 import { IconPicker } from "./IconPicker";
-import type { AppConfig, WidgetInstance } from "./layout";
+import { GRID, isFree, type AppConfig, type Page, type Rect, type WidgetInstance } from "./layout";
 
 export function Sheet({ title, onClose, children }: { title: ReactNode; onClose: () => void; children: ReactNode }) {
   return (
@@ -159,12 +159,55 @@ export function SettingsForm({ def, settings: s, onChange }: { def: WidgetDefini
   );
 }
 
-export function WidgetSettings({ instance, onChange, onClose }: { instance: WidgetInstance; onChange: (s: Record<string, unknown>) => void; onClose: () => void }) {
+/** Taille et position exactes d'un widget (en cellules), refusées si elles chevauchent un autre widget. */
+export function SizeControls({ page, instance, onLayout }: { page: Page; instance: WidgetInstance; onLayout: (widgets: WidgetInstance[]) => void }) {
+  const def = widgetRegistry.get(instance.type);
+  const min = def?.minSize ?? { w: 1, h: 1 };
+  const max = def?.maxSize ?? { w: GRID.cols, h: GRID.rows };
+  const rect: Rect = { x: instance.x, y: instance.y, w: instance.w, h: instance.h };
+  const ok = (r: Rect) => r.w >= min.w && r.h >= min.h && r.w <= max.w && r.h <= max.h && isFree(page, r, instance.id);
+  const apply = (r: Rect) => ok(r) && onLayout(page.widgets.map((w) => (w.id === instance.id ? { ...w, ...r } : w)));
+  const step = (label: string, value: number, dec: Rect, inc: Rect) => (
+    <div className="stepper">
+      <span className="form-label">{label}</span>
+      <div className="stepper-ctl">
+        <button type="button" onClick={() => apply(dec)} disabled={!ok(dec)} aria-label={`${label} moins`}>−</button>
+        <span>{value}</span>
+        <button type="button" onClick={() => apply(inc)} disabled={!ok(inc)} aria-label={`${label} plus`}>+</button>
+      </div>
+    </div>
+  );
+  const full = { x: rect.x, y: 0, w: rect.w, h: GRID.rows };
+  return (
+    <div className="sizer">
+      <div className="sizer-grid">
+        {step("Largeur", rect.w, { ...rect, w: rect.w - 1 }, { ...rect, w: rect.w + 1 })}
+        {step("Hauteur", rect.h, { ...rect, h: rect.h - 1 }, { ...rect, h: rect.h + 1 })}
+        {step("Colonne", rect.x + 1, { ...rect, x: rect.x - 1 }, { ...rect, x: rect.x + 1 })}
+        {step("Ligne", rect.y + 1, { ...rect, y: rect.y - 1 }, { ...rect, y: rect.y + 1 })}
+      </div>
+      <div className="sizer-presets">
+        <button type="button" className="chip" disabled={!ok(full) || (rect.y === 0 && rect.h === GRID.rows)} onClick={() => apply(full)}>Toute la hauteur</button>
+        {def && (
+          <button type="button" className="chip" disabled={!ok({ ...rect, ...def.defaultSize })} onClick={() => apply({ ...rect, ...def.defaultSize })}>
+            Taille par défaut ({def.defaultSize.w}×{def.defaultSize.h})
+          </button>
+        )}
+      </div>
+      <span className="form-help">En cases de la grille (16 × 4). Un bouton grisé = la place est prise par un autre widget.</span>
+    </div>
+  );
+}
+
+export function WidgetSettings({ page, instance, onChange, onLayout, onClose }: { page: Page; instance: WidgetInstance; onChange: (s: Record<string, unknown>) => void; onLayout: (w: WidgetInstance[]) => void; onClose: () => void }) {
   useRegistryVersion();
   const def = widgetRegistry.get(instance.type);
   if (!def) return null;
   return (
     <Sheet title={<><Icon name={def.icon} /> {def.name}</>} onClose={onClose}>
+      <div className="form-label sizer-title">Taille et position</div>
+      <SizeControls page={page} instance={instance} onLayout={onLayout} />
+      <div className="form-label sizer-title">Réglages</div>
       <SettingsForm def={def} settings={instance.settings} onChange={onChange} />
     </Sheet>
   );

@@ -162,6 +162,8 @@ export default function App() {
         {panel?.kind === "palette" && <Palette onPick={addWidget} onClose={() => setPanel(null)} onReload={() => void reloadUserWidgets(true)} />}
         {editedWidget && (
           <WidgetSettings
+            page={page}
+            onLayout={updatePage}
             instance={editedWidget}
             onClose={() => setPanel(null)}
             onChange={(settings) => updatePage(page.widgets.map((w) => (w.id === editedWidget.id ? { ...w, settings } : w)))}
