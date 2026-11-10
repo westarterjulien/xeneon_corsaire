@@ -122,6 +122,17 @@ export interface HaEntity {
   deviceClass: string | null;
 }
 
+export interface DiscordStatus {
+  configured: boolean;
+  running: boolean;
+  authorized: boolean;
+  waiting: boolean;
+  mute: boolean;
+  deaf: boolean;
+  user: string | null;
+  error: string | null;
+}
+
 export interface MonitorInfo {
   name: string | null;
   width: number;
@@ -231,6 +242,7 @@ const mockHa: HaEntity[] = [
   { entityId: "sensor.temperature_bureau", domain: "sensor", name: "Température bureau", state: "21.4", unit: "°C", deviceClass: "temperature" },
   { entityId: "sensor.humidite_bureau", domain: "sensor", name: "Humidité bureau", state: "48", unit: "%", deviceClass: "humidity" },
 ];
+const mockDiscord: DiscordStatus = { configured: true, running: true, authorized: true, waiting: false, mute: false, deaf: false, user: "simulation", error: null };
 const t0 = Date.now();
 const wave = (period: number, phase = 0) => (Math.sin(((Date.now() - t0) / period) * Math.PI * 2 + phase) + 1) / 2;
 const jitter = (n: number) => (Math.random() - 0.5) * n;
@@ -424,6 +436,16 @@ export const bridge = {
   // ---------- Corsair iCUE ----------
   icueBatteries: (): Promise<Battery[]> =>
     isTauri ? call("icue_batteries") : Promise.resolve([{ id: "c1", name: "VIRTUOSO RGB WIRELESS XT", kind: "headset", percentage: 54, charging: false }]),
+
+  // ---------- Discord (RPC local) ----------
+  discordStatus: (): Promise<DiscordStatus> => (isTauri ? call("discord_status") : Promise.resolve({ ...mockDiscord })),
+  discordSetup: (clientId: string, clientSecret: string): Promise<void> => (isTauri ? call("discord_setup", { clientId, clientSecret }) : Promise.resolve()),
+  discordAuthorize: (): Promise<void> => (isTauri ? call("discord_authorize") : Promise.resolve()),
+  discordSet: async (change: { mute?: boolean; deaf?: boolean }): Promise<void> => {
+    if (isTauri) return call("discord_set", { mute: change.mute ?? null, deaf: change.deaf ?? null });
+    Object.assign(mockDiscord, change);
+  },
+  discordForget: (): Promise<void> => (isTauri ? call("discord_forget") : Promise.resolve()),
 
   /** Masque (ou réaffiche) la barre des tâches Windows sur l'écran de l'Edge. */
   taskbarSet: (hidden: boolean): Promise<void> => (isTauri ? call("taskbar_set", { hidden }) : Promise.resolve()),

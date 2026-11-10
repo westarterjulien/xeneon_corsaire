@@ -4,6 +4,7 @@ mod audio;
 mod calendar;
 mod clipboard;
 mod config;
+mod discord;
 mod display;
 mod foreground;
 mod ghub;
@@ -48,6 +49,11 @@ pub fn run() {
             clipboard::clipboard_history,
             clipboard::clipboard_clear,
             clipboard::clipboard_use,
+            discord::discord_status,
+            discord::discord_setup,
+            discord::discord_authorize,
+            discord::discord_set,
+            discord::discord_forget,
             audio::audio_set,
             media::media_info,
             media::media_control,
@@ -90,6 +96,7 @@ pub fn run() {
             taskbar::start();
             foreground::start();
             clipboard::start();
+            discord::start(app.handle().clone());
             let preferred = config::read(app.handle())
                 .and_then(|c| c.pointer("/display/monitor").and_then(|m| m.as_str()).map(str::to_owned));
             if let Err(e) = display::place_on_edge(&window, preferred.as_deref()) {

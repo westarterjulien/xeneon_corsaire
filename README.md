@@ -23,7 +23,7 @@ Application **Tauri 2** (backend Rust + interface React/TypeScript), légère et
 | Son | Volume et sourdine de la sortie et du micro, volume de chaque appli |
 | Batteries | Périphériques sans fil Logitech (G HUB, interface non officielle) et Corsair (SDK iCUE officiel, téléchargé chez Corsair et vérifié) |
 | Réseau | Débit descendant / montant en direct, ping, adresses IP locale et publique |
-| Discord | Couper le micro (état réel, via Windows), sourdine Discord par raccourci, ouvrir Discord |
+| Discord | Micro et sourdine de Discord synchronisés dans les deux sens (connexion directe, [mise en route](docs/discord.md)), ou mode raccourcis clavier |
 | Statut Teams | Voir et changer ta disponibilité Teams (même connexion que l'Agenda) |
 | Home Assistant | Lumières, prises, scènes et capteurs (jeton chiffré par Windows) |
 | Presse-papiers | 15 derniers textes copiés, un toucher pour recoller (jamais écrits sur le disque) |

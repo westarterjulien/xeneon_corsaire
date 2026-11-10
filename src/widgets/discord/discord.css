@@ -8,3 +8,10 @@
 .dsc-btn.is-off.is-flash .dsc-circle { background: var(--danger); }
 .dsc-label { font-size: clamp(12px, 4cqh, 16px); color: var(--muted); white-space: nowrap; }
 @container (max-height: 200px) { .dsc .kicker, .dsc-label { display: none; } }
+.dsc-msg { color: var(--muted); font-weight: 300; font-size: clamp(14px, 4cqh, 18px); line-height: 1.45; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.dsc-auth { height: 48px; padding: 0 22px; border-radius: 999px; background: #5865f2; color: #fff; font-weight: 600; font-size: 15px; }
+.dsc-err { color: var(--danger); font-size: 13px; }
+.dsc-conn { display: flex; flex-direction: column; gap: 8px; }
+.dsc-conn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.dsc-conn input { background: transparent; border: none; border-bottom: 1px solid rgba(255, 255, 255, .14); padding: 10px 0; font-size: 16px; color: var(--text); outline: none; }
+.sx-inspector .dsc-conn input { height: 36px; padding: 0 11px; border-radius: 10px; background: rgba(255, 255, 255, .035); border: 1px solid rgba(255, 255, 255, .11); font-size: 13px; }
