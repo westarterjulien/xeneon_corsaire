@@ -19,7 +19,14 @@ Application **Tauri 2** (backend Rust + interface React/TypeScript), légère et
 | Raccourcis | Ouvrir appli/URL/protocole, combinaisons de touches, commandes, changement de page |
 | Page web | Intègre Home Assistant, Grafana, etc. |
 
-## Installation sous Windows
+## Installer (rien à configurer)
+
+1. Télécharger **`Edge.Studio_…_x64-setup.exe`** depuis la [dernière version](https://github.com/westarterjulien/xeneon_corsaire/releases/latest).
+2. Le lancer. Si Windows affiche « Windows a protégé votre ordinateur » : *Informations complémentaires* → *Exécuter quand même* (l'installateur n'est pas encore signé).
+
+L'appli s'ouvre sur l'Edge, se relance avec Windows et vit dans la zone de notification (clic = Studio). Chaque mise à jour de `main` produit automatiquement un nouvel installateur (GitHub Actions).
+
+## Développer
 
 Prérequis : [Node.js 20+](https://nodejs.org), [Rust](https://rustup.rs) (toolchain MSVC + « Desktop development with C++ » de Visual Studio Build Tools), WebView2 (déjà présent sur Windows 11).
 

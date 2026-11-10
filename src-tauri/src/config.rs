@@ -31,3 +31,17 @@ pub fn save_config(app: AppHandle, config: Value) -> Result<(), String> {
     fs::write(&tmp, data).map_err(|e| e.to_string())?;
     fs::rename(&tmp, &p).map_err(|e| e.to_string())
 }
+
+/// Lancement avec Windows (réglable dans le Studio).
+#[tauri::command]
+pub fn autostart_get(app: AppHandle) -> Result<bool, String> {
+    use tauri_plugin_autostart::ManagerExt;
+    app.autolaunch().is_enabled().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn autostart_set(app: AppHandle, enabled: bool) -> Result<(), String> {
+    use tauri_plugin_autostart::ManagerExt;
+    let l = app.autolaunch();
+    if enabled { l.enable() } else { l.disable() }.map_err(|e| e.to_string())
+}

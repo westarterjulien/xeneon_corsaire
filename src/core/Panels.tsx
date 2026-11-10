@@ -181,11 +181,27 @@ export function AppSettings({ config, onChange, onClose }: { config: AppConfig; 
 /** Couleurs et écran d'affichage. */
 export function AppearanceForm({ config, onChange }: { config: AppConfig; onChange: (c: AppConfig) => void }) {
   const [monitors, setMonitors] = useState<MonitorInfo[]>([]);
+  const [autostart, setAutostart] = useState<boolean | null>(null);
   useEffect(() => {
     bridge.monitors().then(setMonitors).catch(() => setMonitors([]));
+    if (isTauri) bridge.autostartGet().then(setAutostart).catch(() => setAutostart(null));
   }, []);
   return (
       <div className="form">
+        {autostart !== null && (
+          <label className="form-row is-wide form-inline">
+            <input
+              type="checkbox"
+              checked={autostart}
+              onChange={(e) => {
+                const v = e.target.checked;
+                setAutostart(v);
+                bridge.autostartSet(v).catch(() => setAutostart(!v));
+              }}
+            />
+            <span>Lancer Edge Studio au démarrage de Windows</span>
+          </label>
+        )}
         <label className="form-row">
           <span className="form-label">Couleur d'accent</span>
           <input type="color" value={config.theme.accent} onChange={(e) => onChange({ ...config, theme: { ...config.theme, accent: e.target.value } })} />

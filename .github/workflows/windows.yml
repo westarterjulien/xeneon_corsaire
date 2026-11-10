@@ -1,0 +1,45 @@
+# Construit l'installateur Windows à chaque mise à jour de main et le publie dans les Releases GitHub.
+name: Installateur Windows
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> target"
+
+      - run: npm ci
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__-build${{ github.run_number }}
+          releaseName: "Edge Studio v__VERSION__ (build ${{ github.run_number }})"
+          releaseBody: |
+            Télécharge **Edge.Studio_…_x64-setup.exe** ci-dessous et lance-le.
+            Si Windows affiche « Windows a protégé votre ordinateur » : *Informations complémentaires* → *Exécuter quand même*.
+          releaseDraft: false
+          prerelease: false

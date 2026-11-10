@@ -201,6 +201,9 @@ export const bridge = {
     throw new Error("La création de widgets perso est disponible dans l'appli Windows.");
   },
 
+  autostartGet: (): Promise<boolean> => (isTauri ? call("autostart_get") : Promise.resolve(false)),
+  autostartSet: (enabled: boolean): Promise<void> => (isTauri ? call("autostart_set", { enabled }) : Promise.resolve()),
+
   /** Ouvre (ou ramène au premier plan) la fenêtre Studio. */
   openStudio: (): Promise<void> => call("open_studio"),
 
