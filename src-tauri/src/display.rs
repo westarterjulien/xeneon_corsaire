@@ -29,11 +29,12 @@ pub fn place_on_edge(window: &WebviewWindow, preferred: Option<&str>) -> Result<
     let Some(m) = target else {
         return Err("aucun écran au format Xeneon Edge détecté, fenêtre laissée sur l'écran courant".into());
     };
-    // Une fenêtre sans bordure qui couvre exactement l'écran : plus fiable que le plein écran natif
-    // (pas de bascule de focus, pas de réaction aux raccourcis plein écran des jeux).
+    // On place d'abord la fenêtre sur l'Edge, puis on passe en plein écran sans bordure :
+    // Windows la cale alors exactement sur l'écran (sans liseré dû au cadre ou à l'ombre d'une fenêtre classique).
     window.set_fullscreen(false).map_err(|e| e.to_string())?;
     window.set_position(*m.position()).map_err(|e| e.to_string())?;
     window.set_size(*m.size()).map_err(|e| e.to_string())?;
+    window.set_fullscreen(true).map_err(|e| e.to_string())?;
     crate::taskbar::set_target(m.position().x, m.position().y, m.size().width, m.size().height);
     Ok(())
 }

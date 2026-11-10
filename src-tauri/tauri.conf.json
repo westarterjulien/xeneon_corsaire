@@ -17,22 +17,42 @@
         "width": 1280,
         "height": 360,
         "decorations": false,
-        "resizable": true,
+        "resizable": false,
         "visible": false,
-        "skipTaskbar": true
+        "skipTaskbar": true,
+        "shadow": false
       }
     ],
-    "security": { "csp": null }
+    "security": {
+      "csp": null
+    }
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": [
+      "nsis"
+    ],
     "publisher": "Westarter",
     "shortDescription": "Écran personnalisé pour le Corsair Xeneon Edge",
     "windows": {
-      "nsis": { "installMode": "currentUser", "languages": ["French"], "displayLanguageSelector": false },
-      "webviewInstallMode": { "type": "downloadBootstrapper", "silent": true }
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": [
+          "French"
+        ],
+        "displayLanguageSelector": false
+      },
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      }
     },
-    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"]
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
   }
 }
