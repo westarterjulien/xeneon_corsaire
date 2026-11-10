@@ -34,6 +34,7 @@ pub fn place_on_edge(window: &WebviewWindow, preferred: Option<&str>) -> Result<
     window.set_fullscreen(false).map_err(|e| e.to_string())?;
     window.set_position(*m.position()).map_err(|e| e.to_string())?;
     window.set_size(*m.size()).map_err(|e| e.to_string())?;
+    crate::taskbar::set_target(m.position().x, m.position().y, m.size().width, m.size().height);
     Ok(())
 }
 

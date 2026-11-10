@@ -22,7 +22,7 @@ export interface Page {
 export interface AppConfig {
   version: 1;
   theme: { accent: string; background: string };
-  display: { monitor: string | null };
+  display: { monitor: string | null; hideTaskbar: boolean };
   pages: Page[];
 }
 
@@ -62,7 +62,7 @@ export function defaultConfig(): AppConfig {
   return {
     version: 1,
     theme: { accent: "#a9c4ff", background: "#07090c" },
-    display: { monitor: null },
+    display: { monitor: null, hideTaskbar: true },
     pages: [
       {
         id: uid(),

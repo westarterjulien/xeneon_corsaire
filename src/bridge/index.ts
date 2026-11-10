@@ -204,6 +204,9 @@ export const bridge = {
   autostartGet: (): Promise<boolean> => (isTauri ? call("autostart_get") : Promise.resolve(false)),
   autostartSet: (enabled: boolean): Promise<void> => (isTauri ? call("autostart_set", { enabled }) : Promise.resolve()),
 
+  /** Masque (ou réaffiche) la barre des tâches Windows sur l'écran de l'Edge. */
+  taskbarSet: (hidden: boolean): Promise<void> => (isTauri ? call("taskbar_set", { hidden }) : Promise.resolve()),
+
   /** Ouvre (ou ramène au premier plan) la fenêtre Studio. */
   openStudio: (): Promise<void> => call("open_studio"),
 

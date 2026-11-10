@@ -202,6 +202,20 @@ export function AppearanceForm({ config, onChange }: { config: AppConfig; onChan
             <span>Lancer Edge Studio au démarrage de Windows</span>
           </label>
         )}
+        {isTauri && (
+          <label className="form-row is-wide form-inline">
+            <input
+              type="checkbox"
+              checked={config.display.hideTaskbar}
+              onChange={(e) => {
+                const v = e.target.checked;
+                onChange({ ...config, display: { ...config.display, hideTaskbar: v } });
+                void bridge.taskbarSet(v);
+              }}
+            />
+            <span>Masquer la barre des tâches Windows sur l'Edge</span>
+          </label>
+        )}
         <label className="form-row">
           <span className="form-label">Couleur d'accent</span>
           <input type="color" value={config.theme.accent} onChange={(e) => onChange({ ...config, theme: { ...config.theme, accent: e.target.value } })} />
@@ -221,7 +235,7 @@ export function AppearanceForm({ config, onChange }: { config: AppConfig; onChan
                   className={`chip ${active ? "is-active" : ""}`}
                   onClick={() => {
                     if (!m.name) return;
-                    onChange({ ...config, display: { monitor: m.name } });
+                    onChange({ ...config, display: { ...config.display, monitor: m.name } });
                     void bridge.moveToMonitor(m.name);
                   }}
                 >

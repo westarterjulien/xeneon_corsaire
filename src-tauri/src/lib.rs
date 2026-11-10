@@ -5,6 +5,7 @@ mod keys;
 mod media;
 mod studio;
 mod system;
+mod taskbar;
 mod user_widgets;
 
 use tauri::Manager;
@@ -35,6 +36,7 @@ pub fn run() {
             studio::open_studio,
             config::autostart_get,
             config::autostart_set,
+            taskbar::taskbar_set,
         ])
         .setup(|app| {
             let window = app.get_webview_window("main").expect("fenêtre principale absente");
@@ -46,6 +48,11 @@ pub fn run() {
                     eprintln!("[autostart] {e}");
                 }
             }
+            let hide_taskbar = config::read(app.handle())
+                .and_then(|c| c.pointer("/display/hideTaskbar").and_then(|v| v.as_bool()))
+                .unwrap_or(true);
+            taskbar::set_enabled(hide_taskbar);
+            taskbar::start();
             let preferred = config::read(app.handle())
                 .and_then(|c| c.pointer("/display/monitor").and_then(|m| m.as_str()).map(str::to_owned));
             if let Err(e) = display::place_on_edge(&window, preferred.as_deref()) {
@@ -60,6 +67,11 @@ pub fn run() {
             window.show()?;
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("erreur au lancement d'Edge Studio");
+        .build(tauri::generate_context!())
+        .expect("erreur au lancement d'Edge Studio")
+        .run(|_app, event| {
+            if let tauri::RunEvent::Exit = event {
+                taskbar::restore();
+            }
+        });
 }
