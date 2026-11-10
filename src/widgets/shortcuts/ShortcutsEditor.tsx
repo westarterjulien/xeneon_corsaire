@@ -36,7 +36,7 @@ const MODIFIERS = [
   { key: "win", label: "Win" },
 ];
 
-function defaultAction(kind: Action["kind"]): Action {
+export function defaultAction(kind: Action["kind"]): Action {
   switch (kind) {
     case "open": return { kind, target: "" };
     case "keys": return { kind, keys: "" };
@@ -134,7 +134,7 @@ export function summary(a: Action | undefined): string {
   }
 }
 
-function ActionForm({ action, onChange }: { action: Action; onChange: (a: Action) => void }) {
+export function ActionForm({ action, onChange }: { action: Action; onChange: (a: Action) => void }) {
   const pages = usePages();
   return (
     <>

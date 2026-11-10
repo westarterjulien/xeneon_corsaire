@@ -17,6 +17,7 @@ Application **Tauri 2** (backend Rust + interface React/TypeScript), légère et
 | Moniteur système | CPU/RAM (natif), GPU et températures via LibreHardwareMonitor |
 | Lecteur média | Lecture en cours de Windows (Spotify, navigateurs, VLC…), pochette, contrôles, volume |
 | Raccourcis | Ouvrir appli/URL/protocole, combinaisons de touches, commandes, changement de page |
+| Deck | Façon Stream Deck : actions en chaîne avec pauses, boutons à deux états, dossiers, vraies icônes de logiciels |
 | Page web | Intègre Home Assistant, Grafana, etc. |
 | Applications | Tes logiciels en un toucher, avec leurs vraies icônes (recherche parmi les applis installées ou chemin d'un .exe) |
 | Son | Volume et sourdine de la sortie et du micro, volume de chaque appli |
@@ -64,6 +65,10 @@ Clic sur l'icône **Edge Studio** dans la zone de notification (ou bouton **Stud
 - onglets de pages : ajouter, renommer, réordonner, supprimer.
 
 Tout est enregistré et appliqué à l'Edge en direct ; changer de page dans le Studio l'affiche sur l'Edge, et inversement.
+
+**Modèles de pages** : le ＋ des onglets propose une page vide, **Jeu** (performances, ping, musique, volumes, Discord,
+batteries ; s'affiche dès qu'un jeu est en plein écran) ou **Travail** (agenda, statut Teams, presse-papiers, Deck ;
+s'affiche avec Teams ou Outlook).
 
 **Page automatique** : sous le nom de chaque page, « Afficher automatiquement quand » une appli est au premier plan
 (ex. `cs2`, `teams`, ou « Capturer l'appli active ») ou dès qu'une appli est en plein écran. L'Edge y bascule tout seul

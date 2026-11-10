@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Grid } from "../core/Grid";
-import { createInstance, findFreeSpot, uid, type Page, type PageAuto, type WidgetInstance } from "../core/layout";
+import { createInstance, findFreeSpot, type Page, type PageAuto, type WidgetInstance } from "../core/layout";
+import { PAGE_TEMPLATES } from "../core/templates";
 import { bridge, isTauri } from "../bridge";
 import { AppearanceForm, SettingsForm, SizeControls, WidgetLibrary } from "../core/Panels";
 import { useAppConfig } from "../core/store";
@@ -97,6 +98,7 @@ export default function Studio() {
   const [selected, setSelected] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [synced, setSynced] = useState(false);
+  const [menu, setMenu] = useState(false);
 
   // Suit la page affichée sur l'Edge.
   useEffect(() => subscribe((m) => {
@@ -156,9 +158,13 @@ export default function Studio() {
     window.setTimeout(() => (placed ? setSelected(inst.id) : setNotice("Plus de place sur cette page : réduis un widget ou ajoute une page.")), 0);
   };
 
-  const addPage = () => {
+  const addPage = (templateId = "empty") => {
     const n = pages.length;
-    updatePages((ps) => [...ps, { id: uid(), name: `Page ${ps.length + 1}`, widgets: [] }]);
+    const t = PAGE_TEMPLATES.find((x) => x.id === templateId) ?? PAGE_TEMPLATES[0];
+    const p = t.build();
+    if (templateId === "empty") p.name = `Page ${n + 1}`;
+    setMenu(false);
+    updatePages((ps) => [...ps, p]);
     setPageIndex(n);
     setSelected(null);
     publish({ type: "page", index: n });
@@ -196,7 +202,7 @@ export default function Studio() {
               {pages.map((p, i) => (
                 <button key={p.id} className={`st-tab ${i === index ? "is-active" : ""}`} onClick={() => goTo(i)}>{p.name}</button>
               ))}
-              <button className="st-tab st-tab-add" onClick={addPage} aria-label="Ajouter une page"><Icon name="plus" /></button>
+              <button className="st-tab st-tab-add" onClick={() => setMenu(!menu)} aria-label="Ajouter une page"><Icon name="plus" /></button>
             </nav>
             <div className="st-status" title="Les modifications sont enregistrées et appliquées à l'Edge en direct.">
               <span className={`st-dot ${synced ? "is-on" : ""}`} />
@@ -204,6 +210,22 @@ export default function Studio() {
             </div>
           </header>
 
+          {menu && (
+            <div className="st-menu-backdrop" onClick={() => setMenu(false)}>
+              <div className="st-menu" onClick={(e) => e.stopPropagation()}>
+                <div className="kicker">Nouvelle page</div>
+                {PAGE_TEMPLATES.map((t) => (
+                  <button key={t.id} className="st-menu-item" onClick={() => addPage(t.id)}>
+                    <span className="st-panel-icon"><Icon name={t.icon} /></span>
+                    <span>
+                      <span className="st-menu-name">{t.name}</span>
+                      <span className="st-menu-desc">{t.description}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <aside className="st-left">
             <div className="kicker">Bibliothèque</div>
             <p className="st-help">Clique sur un widget pour l'ajouter à la page.</p>

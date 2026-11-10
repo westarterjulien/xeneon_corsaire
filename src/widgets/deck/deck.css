@@ -1,0 +1,46 @@
+.dk { height: 100%; display: flex; flex-direction: column; justify-content: center; padding: 0 28px; }
+.dk .kicker { margin-bottom: 2.6cqh; }
+.dk-grid {
+  --s: min(96px, calc((100cqw - 56px) / var(--cols) - 18px), calc((100cqh - 60px) / var(--rows) - 40px));
+  display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 2.2cqh 10px; align-content: center;
+}
+.dk-btn { display: flex; flex-direction: column; align-items: center; gap: 9px; min-width: 0; transition: transform .1s; }
+.dk-btn:active { transform: scale(.93); }
+.dk-circle {
+  --tint: rgba(255, 255, 255, .5);
+  position: relative; width: var(--s); height: var(--s); border-radius: 30%; display: grid; place-items: center; font-size: calc(var(--s) * .34);
+  border: 1px solid color-mix(in srgb, var(--tint) 35%, transparent); background: color-mix(in srgb, var(--tint) 9%, transparent); color: var(--text);
+  transition: background .2s, color .2s, border-color .2s;
+}
+.dk-btn.is-on .dk-circle { background: var(--tint); color: #10131a; border-color: transparent; box-shadow: 0 0 24px color-mix(in srgb, var(--tint) 40%, transparent); }
+.dk-btn.is-busy .dk-circle { animation: dk-pulse .8s ease-in-out infinite alternate; }
+.dk-btn.is-err .dk-circle { border-color: var(--danger); color: var(--danger); }
+@keyframes dk-pulse { from { opacity: 1; } to { opacity: .45; } }
+.dk-letter { font-weight: 300; }
+.dk-folder-dot { position: absolute; right: 9%; bottom: 9%; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.dk-back .dk-circle { border-style: dashed; }
+.dk-label { font-size: clamp(11px, 2.4cqh, 15px); color: rgba(238, 242, 247, .65); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; padding: 0 4px; }
+@container (max-height: 220px) { .dk .kicker, .dk-label { display: none; } }
+
+/* Éditeur */
+.dke-colors { display: flex; gap: 8px; }
+.dke-color { width: 30px; height: 30px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .2); color: var(--faint); font-size: 12px; }
+.dke-color.is-active { outline: 2px solid var(--text); outline-offset: 2px; }
+.dke-app { display: flex; flex-direction: column; gap: 8px; }
+.dke-app-current { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+.dke-steps { display: flex; flex-direction: column; gap: 6px; }
+.dke-step { border: 1px solid var(--line); border-radius: 12px; }
+.dke-step.is-open { border-color: rgba(255, 255, 255, .16); }
+.dke-step-head { display: flex; align-items: center; gap: 8px; padding: 4px 6px 4px 10px; }
+.dke-step-n { width: 22px; height: 22px; border-radius: 50%; background: rgba(255, 255, 255, .08); display: grid; place-items: center; font-size: 12px; flex-shrink: 0; }
+.dke-step-sum { flex: 1; min-width: 0; text-align: left; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 6px 0; }
+.dke-step-body { padding: 4px 12px 12px; display: flex; flex-direction: column; gap: 10px; }
+.dke-add { display: flex; gap: 6px; flex-wrap: wrap; }
+.dke-add .chip { display: inline-flex; align-items: center; gap: 6px; }
+.dke-inline { display: flex; align-items: center; gap: 10px; font-weight: 300; }
+.form .dke-inline input[type="number"] { width: 70px; }
+.dke-toggle { margin-top: 10px; }
+.dke-toggle input { width: 22px; height: 22px; accent-color: var(--accent); }
+.dke-alt { display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 14px; background: rgba(255, 255, 255, .03); }
+.dke-delete { align-self: flex-start; color: var(--danger); margin-top: 12px; display: inline-flex; align-items: center; gap: 6px; }
+.dke-crumb .sce-ico { border-style: dashed; }

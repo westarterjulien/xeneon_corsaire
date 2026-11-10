@@ -103,3 +103,12 @@
 .st-auto-input:focus { border-color: var(--accent); }
 .st-auto-check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .st-auto-check input { accent-color: var(--accent); }
+
+/* Menu « nouvelle page » */
+.st-menu-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 40; }
+.st-menu { position: absolute; top: 58px; left: 280px; width: 420px; padding: 16px; border-radius: 18px; background: #0d1016; border: 1px solid rgba(255, 255, 255, .1); box-shadow: 0 30px 80px rgba(0, 0, 0, .6); display: flex; flex-direction: column; gap: 4px; }
+.st-menu .kicker { margin: 0 6px 8px; }
+.st-menu-item { display: flex; align-items: center; gap: 14px; padding: 10px; border-radius: 12px; text-align: left; }
+.st-menu-item:hover { background: var(--hover); }
+.st-menu-name { display: block; font-size: 15px; }
+.st-menu-desc { display: block; font-size: 12px; color: var(--faint); line-height: 1.4; margin-top: 2px; }
