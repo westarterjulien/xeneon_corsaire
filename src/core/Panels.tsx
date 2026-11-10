@@ -270,7 +270,7 @@ export function AppearanceForm({ config, onChange }: { config: AppConfig; onChan
         <div className="form-row is-wide">
           <span className="form-label">Écran d'affichage</span>
           <div className="monitor-list">
-            {monitors.map((m) => {
+            {monitors.map((m, i) => {
               const active = config.display.monitor ? config.display.monitor === m.name : m.isEdge;
               return (
                 <button
@@ -282,8 +282,7 @@ export function AppearanceForm({ config, onChange }: { config: AppConfig; onChan
                     void bridge.moveToMonitor(m.name);
                   }}
                 >
-                  {m.name ?? "Écran"} · {m.width}×{m.height}
-                  {m.isEdge ? " · Edge" : ""}
+                  {m.isEdge ? "Xeneon Edge" : `Écran ${i + 1}`} · {m.width}×{m.height}
                 </button>
               );
             })}

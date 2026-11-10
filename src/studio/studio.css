@@ -26,7 +26,7 @@
 
 /* Colonnes latérales */
 .st-left, .st-right { overflow-y: auto; padding: 22px 20px 32px; }
-.st-left { grid-area: left; border-right: 1px solid var(--line); }
+.st-left { grid-area: left; border-right: 1px solid var(--line); overflow-x: hidden; }
 .st-right { grid-area: right; border-left: 1px solid var(--line); }
 .st-left .palette-section { margin: 22px 0 10px; font-size: 11px; }
 .st-left .palette-section:first-of-type { margin-top: 4px; }
@@ -40,6 +40,7 @@
 .st-left .palette-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .st-left .link-btn { font-size: 13px; padding: 7px 12px; }
 .st-left .palette-note, .st-left .palette-empty { font-size: 12px; }
+.st-left .palette-note code { word-break: break-all; }
 
 /* Centre : aperçu */
 .st-center { grid-area: center; display: flex; flex-direction: column; padding: 22px 28px; min-width: 0; overflow-y: auto; }
@@ -55,9 +56,9 @@
 .st-canvas { position: absolute !important; top: 0; left: 0; width: 2560px !important; height: 720px !important; transform-origin: 0 0; }
 .st-hint { color: var(--faint); font-size: 13px; text-align: center; margin-top: 22px; font-weight: 300; }
 
-/* Commandes d'édition lisibles malgré la réduction de l'aperçu */
-.st-canvas .widget-edit-actions { transform: scale(var(--inv)); transform-origin: top right; }
-.st-canvas .widget-edit-name { transform: scale(var(--inv)); transform-origin: bottom left; }
+/* Aperçu : pas de boutons par widget (réglages et suppression sont dans le panneau de droite),
+   juste le contour de sélection et la poignée de redimensionnement. */
+.st-canvas .widget-edit-actions, .st-canvas .widget-edit-name { display: none; }
 .st-canvas .widget-resize { transform: scale(var(--inv)); transform-origin: bottom right; }
 .st-canvas .widget-edit { border-width: calc(1px * var(--inv)); cursor: grab; }
 .st-canvas .widget.is-selected .widget-edit { border: calc(2px * var(--inv)) solid var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent); }
