@@ -227,3 +227,25 @@ kbd { font: 600 11px/1 "Inter Variable", sans-serif; padding: 4px 7px; border-ra
   .sx-stage { padding: 18px 20px 22px; }
   .sx-thumb { width: 150px; }
 }
+
+/* ---------- Anti-débordement de l'inspecteur ----------
+   Les contenus longs (résumés d'actions, libellés) ne doivent jamais élargir le panneau. */
+.sx-inspector { overflow-x: hidden; }
+.sx-inspector > *, .sx-card, .sx-card > *, .sx-inspector .form, .sx-inspector .form-row, .sx-inspector .sce-form, .sx-inspector .sce-list, .sx-inspector .dke-steps, .sx-inspector .dke-step { min-width: 0; max-width: 100%; }
+.sx-inspector .sce { grid-template-columns: minmax(0, 1fr); }
+.sx-inspector .sce-item, .sx-inspector .dke-step-head, .sx-inspector .dke-preview, .sx-inspector .apk-item { min-width: 0; }
+.sx-inspector .sce-text, .sx-inspector .dke-step-sum { min-width: 0; overflow: hidden; }
+.sx-inspector .dke-tabs { min-width: 0; }
+.sx-inspector .dke-tabs button { min-width: 0; padding: 0 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sx-inspector .dke-colors { gap: 6px; }
+.sx-inspector .dke-color { width: 26px; height: 26px; border-radius: 8px; }
+.sx-inspector .dke-toggle { align-items: flex-start; font-size: 13px; line-height: 1.4; }
+.sx-inspector .dke-toggle input { flex-shrink: 0; margin-top: 1px; }
+.sx-inspector .dke-preview .sce-label { min-width: 0; flex: 1; }
+.sx-inspector .dke-preview-box { width: 52px; height: 52px; border-radius: 14px; }
+.sx-inspector .segmented { flex-wrap: wrap; }
+.sx-inspector .segmented button { flex: 1 1 30%; }
+.sx-inspector .keyrec-mods { gap: 6px; }
+.sx-inspector .apk-path { min-width: 0; }
+.sx-inspector .apk-path input { min-width: 0; }
+.sx-inspector .sce-add { justify-content: flex-start; }

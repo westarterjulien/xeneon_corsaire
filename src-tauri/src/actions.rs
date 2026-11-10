@@ -13,6 +13,8 @@ pub enum Action {
     /// Combinaison de touches, ex. "ctrl+shift+m".
     Keys { keys: String },
     Media { command: String },
+    /// Programme lancé directement avec ses arguments (sans passer par cmd.exe : aucun souci de guillemets).
+    Run { program: String, args: Vec<String> },
 }
 
 #[cfg(windows)]
@@ -79,5 +81,47 @@ pub async fn run_action(action: Action) -> Result<(), String> {
             .map_err(|e| e.to_string())?
         }
         Action::Media { command } => crate::media::control(&command),
+        Action::Run { program, args } => {
+            let program = expand_env(&program);
+            let mut c = Command::new(&program);
+            c.args(&args);
+            hidden(&mut c).spawn().map(|_| ()).map_err(|e| format!("{program} : {e}"))
+        }
+    }
+}
+
+/// Remplace %VARIABLE% par sa valeur (ex. %ProgramFiles%).
+pub fn expand_env(s: &str) -> String {
+    let mut out = String::new();
+    let mut rest = s;
+    while let Some(i) = rest.find('%') {
+        out.push_str(&rest[..i]);
+        let after = &rest[i + 1..];
+        match after.find('%') {
+            Some(j) if j > 0 => {
+                let name = &after[..j];
+                out.push_str(&std::env::var(name).unwrap_or_else(|_| format!("%{name}%")));
+                rest = &after[j + 1..];
+            }
+            _ => {
+                out.push('%');
+                rest = after;
+            }
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn expands_env() {
+        std::env::set_var("EDGE_TEST_DIR", "C:\\Prog");
+        assert_eq!(expand_env("%EDGE_TEST_DIR%\\ShareX\\ShareX.exe"), "C:\\Prog\\ShareX\\ShareX.exe");
+        assert_eq!(expand_env("100%"), "100%");
+        assert_eq!(expand_env("%NOPE_EDGE%"), "%NOPE_EDGE%");
     }
 }

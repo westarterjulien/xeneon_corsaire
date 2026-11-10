@@ -16,6 +16,7 @@ const KINDS: { kind: Action["kind"]; label: string }[] = [
   { kind: "open", label: "Ouvrir" },
   { kind: "keys", label: "Touches" },
   { kind: "command", label: "Commande" },
+  { kind: "run", label: "Programme" },
   { kind: "media", label: "Média" },
   { kind: "page", label: "Page" },
 ];
@@ -41,6 +42,7 @@ export function defaultAction(kind: Action["kind"]): Action {
     case "open": return { kind, target: "" };
     case "keys": return { kind, keys: "" };
     case "command": return { kind, command: "" };
+    case "run": return { kind, program: "", args: [] };
     case "media": return { kind, command: "play_pause" };
     case "page": return { kind, page: 0 };
   }
@@ -129,6 +131,7 @@ export function summary(a: Action | undefined): string {
     case "open": return a.target || "À configurer";
     case "keys": return a.keys ? formatCombo(a.keys) : "À configurer";
     case "command": return a.command || "À configurer";
+    case "run": return a.program ? `${a.program.split("\\").pop()} ${a.args.join(" ")}`.trim() : "À configurer";
     case "media": return MEDIA.find((m) => m.value === a.command)?.label ?? a.command;
     case "page": return `Page ${a.page + 1}`;
   }
@@ -154,6 +157,13 @@ export function ActionForm({ action, onChange }: { action: Action; onChange: (a:
         <>
           <input type="text" value={action.command} placeholder="ex. shutdown /s /t 0" onChange={(e) => onChange({ ...action, command: e.target.value })} />
           <span className="form-help">Exécutée par cmd.exe, sans fenêtre.</span>
+        </>
+      )}
+      {action.kind === "run" && (
+        <>
+          <input type="text" value={action.program} placeholder="C:\Program Files\ShareX\ShareX.exe" onChange={(e) => onChange({ ...action, program: e.target.value })} />
+          <input type="text" value={action.args.join(" ")} placeholder="Arguments (ex. -RectangleRegion)" onChange={(e) => onChange({ ...action, args: e.target.value.split(" ").filter(Boolean) })} />
+          <span className="form-help">Lance le programme avec ces arguments. Les variables comme %ProgramFiles% sont acceptées.</span>
         </>
       )}
       {action.kind === "media" && (

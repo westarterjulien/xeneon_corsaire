@@ -98,3 +98,39 @@ export const DEFAULT_DECK: DeckButton[] = [
   { id: "pp", label: "Lecture", icon: "play", steps: [{ kind: "media", command: "play_pause" }] },
   { id: "next", label: "Suivant", icon: "next", steps: [{ kind: "media", command: "next" }] },
 ];
+
+/** Dossier prêt à l'emploi pour ShareX (ordres en ligne de commande : indépendants de tes raccourcis ShareX). */
+export function sharexFolder(path: string): DeckButton {
+  const run = (arg: string): Step[] => [{ kind: "run", program: path, args: [arg] }];
+  return {
+    id: newId(),
+    label: "ShareX",
+    icon: "camera",
+    color: "#2563eb",
+    steps: [],
+    children: [
+      { id: newId(), label: "Zone", icon: "camera", color: "#2563eb", steps: run("-RectangleRegion") },
+      { id: newId(), label: "Écran", icon: "grid", color: "#2563eb", steps: run("-PrintScreen") },
+      { id: newId(), label: "Fenêtre", icon: "layers", color: "#2563eb", steps: run("-ActiveWindow") },
+      {
+        id: newId(),
+        label: "Vidéo",
+        icon: "record",
+        color: "#dc2626",
+        steps: run("-ScreenRecorder"),
+        alt: { label: "Arrêter", icon: "pause", color: "#dc2626", steps: run("-StopScreenRecording") },
+      },
+      {
+        id: newId(),
+        label: "GIF",
+        icon: "clip",
+        color: "#9333ea",
+        steps: run("-ScreenRecorderGIF"),
+        alt: { label: "Arrêter", icon: "pause", color: "#9333ea", steps: run("-StopScreenRecording") },
+      },
+      { id: newId(), label: "Texte (OCR)", icon: "clipboard", color: "#0891b2", steps: run("-OCR") },
+      { id: newId(), label: "Défilement", icon: "down", color: "#0891b2", steps: run("-ScrollingCapture") },
+      { id: newId(), label: "Couleur", icon: "drop", color: "#db2777", steps: run("-ScreenColorPicker") },
+    ],
+  };
+}

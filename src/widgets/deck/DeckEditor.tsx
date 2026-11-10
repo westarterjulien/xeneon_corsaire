@@ -7,7 +7,7 @@ import type { SettingEditorProps } from "../../sdk/types";
 import { AppIcon } from "../apps/AppIcon";
 import { ActionForm, defaultAction, summary } from "../shortcuts/ShortcutsEditor";
 import { FaceVisual } from "./face";
-import { atPath, COLORS, newId, onColor, setAtPath, type ButtonFace, type ButtonImage, type DeckButton, type Step } from "./model";
+import { atPath, COLORS, newId, onColor, setAtPath, sharexFolder, type ButtonFace, type ButtonImage, type DeckButton, type Step } from "./model";
 
 function stepSummary(s: Step): string {
   if (s.kind === "delay") return `Pause ${(s.ms / 1000).toLocaleString("fr-FR")} s`;
@@ -280,6 +280,18 @@ export function DeckEditor({ value, onChange }: SettingEditorProps) {
         ))}
         <button type="button" className="sce-add" onClick={() => add(false)}><Icon name="plus" /> Bouton</button>
         <button type="button" className="sce-add" onClick={() => add(true)}><Icon name="folder" /> Dossier</button>
+        <button
+          type="button"
+          className="sce-add"
+          onClick={async () => {
+            const path = (await bridge.sharexPath().catch(() => null)) ?? "%ProgramFiles%\\ShareX\\ShareX.exe";
+            const f = sharexFolder(path);
+            setList([...list, f]);
+            setSel(f.id);
+          }}
+        >
+          <Icon name="camera" /> Dossier ShareX
+        </button>
       </div>
 
       {current && (

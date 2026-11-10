@@ -57,6 +57,7 @@ export type Action =
   | { kind: "command"; command: string }
   | { kind: "keys"; keys: string }
   | { kind: "media"; command: MediaCommand }
+  | { kind: "run"; program: string; args: string[] }
   | { kind: "page"; page: number };
 
 export interface AudioEndpoint {
@@ -375,6 +376,8 @@ export const bridge = {
 
   // ---------- Applications installées ----------
   installedApps: (): Promise<InstalledApp[]> => (isTauri ? call("installed_apps") : Promise.resolve(mockApps)),
+  /** Chemin de ShareX s'il est installé. */
+  sharexPath: (): Promise<string | null> => (isTauri ? call("sharex_path") : Promise.resolve("C:\\Program Files\\ShareX\\ShareX.exe")),
   appIcon: (id: string): Promise<string | null> => (isTauri ? call("app_icon", { id }) : Promise.resolve(null)),
 
   // ---------- Batteries (Logitech G HUB) ----------

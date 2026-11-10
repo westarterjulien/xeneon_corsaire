@@ -51,6 +51,12 @@ pub async fn app_icon(id: String) -> Option<String> {
     icon
 }
 
+/// Chemin de ShareX s'il est installé (registre « App Paths », dossiers habituels, version Steam).
+#[tauri::command]
+pub fn sharex_path() -> Option<String> {
+    imp::sharex()
+}
+
 pub fn parse_list(json: &str) -> Result<Vec<InstalledApp>, String> {
     // PowerShell renvoie un objet seul (et non un tableau) s'il n'y a qu'une appli.
     let v: serde_json::Value = serde_json::from_str(json.trim().trim_start_matches('\u{feff}')).map_err(|e| format!("liste illisible : {e}"))?;
@@ -72,6 +78,9 @@ mod imp {
         Err("disponible uniquement sous Windows".into())
     }
     pub fn icon(_: &str) -> Option<String> {
+        None
+    }
+    pub fn sharex() -> Option<String> {
         None
     }
 }
@@ -101,6 +110,32 @@ mod imp {
             .output()
             .map_err(|e| format!("PowerShell indisponible : {e}"))?;
         parse_list(&String::from_utf8_lossy(&out.stdout))
+    }
+
+    pub fn sharex() -> Option<String> {
+        use windows::core::w;
+        use windows::Win32::System::Registry::{RegGetValueW, HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, RRF_RT_REG_SZ};
+        let key = w!("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\ShareX.exe");
+        for root in [HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE] {
+            let mut buf = [0u16; 520];
+            let mut size = (buf.len() * 2) as u32;
+            let ok = unsafe { RegGetValueW(root, key, None, RRF_RT_REG_SZ, None, Some(buf.as_mut_ptr() as *mut _), Some(&mut size)) }.is_ok();
+            if ok {
+                let p = String::from_utf16_lossy(&buf[..(size as usize / 2).saturating_sub(1)]).trim_matches('"').to_string();
+                if std::path::Path::new(&p).exists() {
+                    return Some(p);
+                }
+            }
+        }
+        let env = |k: &str| std::env::var(k).unwrap_or_default();
+        [
+            format!("{}\\ShareX\\ShareX.exe", env("ProgramFiles")),
+            format!("{}\\ShareX\\ShareX.exe", env("ProgramFiles(x86)")),
+            format!("{}\\Programs\\ShareX\\ShareX.exe", env("LOCALAPPDATA")),
+            format!("{}\\Steam\\steamapps\\common\\ShareX\\ShareX.exe", env("ProgramFiles(x86)")),
+        ]
+        .into_iter()
+        .find(|p| std::path::Path::new(p).exists())
     }
 
     /// Icône de l'appli via le Shell Windows (la même que dans le menu Démarrer), encodée en PNG.

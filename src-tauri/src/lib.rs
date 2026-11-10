@@ -39,6 +39,7 @@ pub fn run() {
             audio::audio_state,
             apps::installed_apps,
             apps::app_icon,
+            apps::sharex_path,
             ghub::ghub_batteries,
             icue::icue_batteries,
             foreground::foreground_app,
