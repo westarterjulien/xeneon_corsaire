@@ -82,10 +82,15 @@ pub async fn run_action(action: Action) -> Result<(), String> {
         }
         Action::Media { command } => crate::media::control(&command),
         Action::Run { program, args } => {
-            let program = expand_env(&program);
+            let program = expand_env(program.trim().trim_matches('"'));
+            let name = program.rsplit(['\\', '/']).next().unwrap_or(&program).to_string();
+            // Chemin complet introuvable : message clair plutôt qu'une erreur système.
+            if (program.contains('\\') || program.contains('/')) && std::fs::symlink_metadata(&program).is_err() {
+                return Err(format!("{name} introuvable à cet emplacement : {program}"));
+            }
             let mut c = Command::new(&program);
             c.args(&args);
-            hidden(&mut c).spawn().map(|_| ()).map_err(|e| format!("{program} : {e}"))
+            hidden(&mut c).spawn().map(|_| ()).map_err(|e| format!("impossible de lancer {name} : {e}"))
         }
     }
 }

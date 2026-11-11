@@ -7,7 +7,7 @@ import type { SettingEditorProps } from "../../sdk/types";
 import { AppIcon } from "../apps/AppIcon";
 import { ActionForm, defaultAction, summary } from "../shortcuts/ShortcutsEditor";
 import { FaceVisual } from "./face";
-import { atPath, COLORS, newId, onColor, setAtPath, sharexFolder, type ButtonFace, type ButtonImage, type DeckButton, type Step } from "./model";
+import { atPath, COLORS, newId, onColor, runSteps, setAtPath, sharexFolder, type ButtonFace, type ButtonImage, type DeckButton, type Step } from "./model";
 
 function stepSummary(s: Step): string {
   if (s.kind === "delay") return `Pause ${(s.ms / 1000).toLocaleString("fr-FR")} s`;
@@ -235,8 +235,33 @@ function StepsForm({ steps, onChange }: { steps: Step[]; onChange: (s: Step[]) =
   );
 }
 
+/** Lance les actions du bouton depuis l'éditeur et affiche le résultat. */
+function TestSteps({ steps }: { steps: Step[] }) {
+  const [res, setRes] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const test = async () => {
+    setBusy(true);
+    setRes(null);
+    try {
+      await runSteps(steps, () => {});
+      setRes({ ok: true, msg: "Action lancée sans erreur." });
+    } catch (e) {
+      setRes({ ok: false, msg: String(e).replace(/^Error: /, "") });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="dke-test">
+      <button type="button" className="chip" onClick={test} disabled={busy || !steps.length}><Icon name="play" /> {busy ? "Test…" : "Tester"}</button>
+      {res && <span className={res.ok ? "dke-test-ok" : "field-error"}>{res.msg}</span>}
+    </div>
+  );
+}
+
 export function DeckEditor({ value, onChange }: SettingEditorProps) {
   const root = (Array.isArray(value) ? value : []) as DeckButton[];
+  const [sharexNote, setSharexNote] = useState<string | null>(null);
   const [path, setPath] = useState<string[]>([]);
   const [sel, setSel] = useState<string | null>(root[0]?.id ?? null);
   const list = atPath(root, path);
@@ -284,14 +309,21 @@ export function DeckEditor({ value, onChange }: SettingEditorProps) {
           type="button"
           className="sce-add dke-sharex"
           onClick={async () => {
-            const path = (await bridge.sharexPath().catch(() => null)) ?? "%ProgramFiles%\\ShareX\\ShareX.exe";
+            const found = await bridge.sharexPath().catch(() => null);
+            const path = found ?? "%ProgramFiles%\\ShareX\\ShareX.exe";
             const f = sharexFolder(path);
             setList([...list, f]);
             setSel(f.id);
+            setSharexNote(
+              found
+                ? `ShareX trouvé : ${found}`
+                : "ShareX introuvable automatiquement : ouvre le dossier ShareX, sélectionne un bouton et indique le chemin de ShareX.exe dans son action « Programme ».",
+            );
           }}
         >
           <Icon name="camera" /> Ajouter un dossier ShareX (captures, vidéo, GIF, OCR)
         </button>
+        {sharexNote && <span className="dke-note">{sharexNote}</span>}
       </div>
 
       {current && (
@@ -306,6 +338,7 @@ export function DeckEditor({ value, onChange }: SettingEditorProps) {
             <>
               <span className="form-label">Actions, dans l'ordre</span>
               <StepsForm steps={current.steps} onChange={(steps) => update({ steps })} />
+              <TestSteps steps={current.steps} />
               <label className="dke-inline dke-toggle">
                 <input type="checkbox" checked={!!current.alt} onChange={(e) => update({ alt: e.target.checked ? { label: `${current.label} (actif)`, icon: current.icon, color: "#7ee0a1", steps: [...current.steps] } : undefined })} />
                 Bouton à deux états (un appui sur deux fait autre chose)

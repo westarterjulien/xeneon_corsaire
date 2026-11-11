@@ -67,3 +67,8 @@
 .dke-delete { align-self: flex-start; color: var(--danger); margin-top: 12px; display: inline-flex; align-items: center; gap: 6px; }
 .dke-crumb .sce-ico { border-style: dashed; }
 .dke-sharex { margin-top: 6px; border: 1px solid color-mix(in srgb, #2563eb 55%, transparent); border-radius: 12px; background: color-mix(in srgb, #2563eb 12%, transparent); color: #c7d7ff !important; padding: 10px 12px !important; }
+.dk { position: relative; }
+.dk-error { position: absolute; left: 16px; right: 16px; bottom: 10px; z-index: 2; text-align: left; padding: 10px 14px; border-radius: 12px; background: rgba(40, 8, 8, .94); border: 1px solid rgba(248, 113, 113, .5); color: #ffd6d6; font-size: 13px; line-height: 1.4; }
+.dke-test { display: flex; flex-direction: column; gap: 6px; }
+.dke-test-ok { color: #7ee0a1; font-size: 13px; }
+.dke-note { font-size: 12px; color: var(--faint); line-height: 1.45; word-break: break-all; }

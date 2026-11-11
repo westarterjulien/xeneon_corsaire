@@ -112,30 +112,59 @@ mod imp {
         parse_list(&String::from_utf8_lossy(&out.stdout))
     }
 
+    /// Lit une valeur texte du registre (None si absente).
+    fn reg_str(root: windows::Win32::System::Registry::HKEY, key: &str, value: Option<&str>) -> Option<String> {
+        use windows::core::{HSTRING, PCWSTR};
+        use windows::Win32::System::Registry::{RegGetValueW, RRF_RT_REG_SZ};
+        let k = HSTRING::from(key);
+        let v = value.map(HSTRING::from);
+        let mut buf = [0u16; 520];
+        let mut size = (buf.len() * 2) as u32;
+        let ok = unsafe {
+            RegGetValueW(root, &k, v.as_ref().map(|h| PCWSTR(h.as_ptr())).unwrap_or(PCWSTR::null()), RRF_RT_REG_SZ, None, Some(buf.as_mut_ptr() as *mut _), Some(&mut size))
+        }
+        .is_ok();
+        ok.then(|| String::from_utf16_lossy(&buf[..(size as usize / 2).saturating_sub(1)]).trim_matches('"').to_string())
+    }
+
+    /// Le fichier existe (y compris les alias d'exécution des applis du Store, qui sont des points d'analyse).
+    fn present(p: &str) -> bool {
+        !p.is_empty() && std::fs::symlink_metadata(p).is_ok()
+    }
+
     pub fn sharex() -> Option<String> {
-        use windows::core::w;
-        use windows::Win32::System::Registry::{RegGetValueW, HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, RRF_RT_REG_SZ};
-        let key = w!("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\ShareX.exe");
+        use windows::Win32::System::Registry::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
+        let env = |k: &str| std::env::var(k).unwrap_or_default();
+        let mut candidates: Vec<String> = Vec::new();
+        // 1. Chemin déclaré par l'installateur (App Paths) et dossier d'installation du désinstalleur.
         for root in [HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE] {
-            let mut buf = [0u16; 520];
-            let mut size = (buf.len() * 2) as u32;
-            let ok = unsafe { RegGetValueW(root, key, None, RRF_RT_REG_SZ, None, Some(buf.as_mut_ptr() as *mut _), Some(&mut size)) }.is_ok();
-            if ok {
-                let p = String::from_utf16_lossy(&buf[..(size as usize / 2).saturating_sub(1)]).trim_matches('"').to_string();
-                if std::path::Path::new(&p).exists() {
-                    return Some(p);
+            if let Some(p) = reg_str(root, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\ShareX.exe", None) {
+                candidates.push(p);
+            }
+            for key in [
+                "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ShareX_is1",
+                "SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ShareX_is1",
+            ] {
+                if let Some(dir) = reg_str(root, key, Some("InstallLocation")) {
+                    candidates.push(format!("{}\\ShareX.exe", dir.trim_end_matches('\\')));
                 }
             }
         }
-        let env = |k: &str| std::env::var(k).unwrap_or_default();
-        [
+        // 2. Dossiers habituels, Steam, et alias de la version Microsoft Store.
+        candidates.extend([
             format!("{}\\ShareX\\ShareX.exe", env("ProgramFiles")),
             format!("{}\\ShareX\\ShareX.exe", env("ProgramFiles(x86)")),
             format!("{}\\Programs\\ShareX\\ShareX.exe", env("LOCALAPPDATA")),
             format!("{}\\Steam\\steamapps\\common\\ShareX\\ShareX.exe", env("ProgramFiles(x86)")),
-        ]
-        .into_iter()
-        .find(|p| std::path::Path::new(p).exists())
+            format!("{}\\Microsoft\\WindowsApps\\ShareX.exe", env("LOCALAPPDATA")),
+        ]);
+        if let Some(p) = candidates.into_iter().find(|p| present(p)) {
+            return Some(p);
+        }
+        // 3. Dans le PATH.
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        let out = Command::new("where.exe").arg("ShareX.exe").creation_flags(CREATE_NO_WINDOW).output().ok()?;
+        String::from_utf8_lossy(&out.stdout).lines().map(str::trim).find(|l| present(l)).map(str::to_owned)
     }
 
     /// Icône de l'appli via le Shell Windows (la même que dans le menu Démarrer), encodée en PNG.

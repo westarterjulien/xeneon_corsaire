@@ -48,7 +48,7 @@ export default defineWidget<Settings>({
     const pages = usePages();
     const [path, setPath] = useState<string[]>([]);
     const [busy, setBusy] = useState<string | null>(null);
-    const [failed, setFailed] = useState<string | null>(null);
+    const [failed, setFailed] = useState<{ id: string; msg: string } | null>(null);
     const root = Array.isArray(settings.buttons) ? settings.buttons : [];
     const list = atPath(root, path);
     const states = settings.states ?? {};
@@ -68,8 +68,8 @@ export default defineWidget<Settings>({
         if (b.alt) updateSettings({ states: { ...states, [b.id]: !second } });
       } catch (e) {
         console.error("[deck]", b.label, e);
-        setFailed(b.id);
-        window.setTimeout(() => setFailed(null), 1200);
+        setFailed({ id: b.id, msg: `${b.label} : ${String(e).replace(/^Error: /, "")}` });
+        window.setTimeout(() => setFailed(null), 6000);
       } finally {
         setBusy(null);
       }
@@ -90,12 +90,17 @@ export default defineWidget<Settings>({
             const second = !!b.alt && !!states[b.id];
             const face: ButtonFace = second ? { ...b, ...b.alt } : b;
             return (
-              <button key={b.id} className={`dk-btn ${second ? "is-on" : ""} ${busy === b.id ? "is-busy" : ""} ${failed === b.id ? "is-err" : ""}`} onClick={() => press(b)}>
+              <button key={b.id} className={`dk-btn ${second ? "is-on" : ""} ${busy === b.id ? "is-busy" : ""} ${failed?.id === b.id ? "is-err" : ""}`} onClick={() => press(b)}>
                 <Face face={face} folder={!!b.children} />
               </button>
             );
           })}
         </div>
+        {failed && (
+          <button className="dk-error" onClick={() => setFailed(null)}>
+            {failed.msg}
+          </button>
+        )}
       </div>
     );
   },
