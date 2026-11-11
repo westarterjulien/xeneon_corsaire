@@ -17,7 +17,7 @@ Application **Tauri 2** (backend Rust + interface React/TypeScript), légère et
 | Moniteur système | CPU/RAM (natif), GPU et températures via LibreHardwareMonitor |
 | Lecteur média | Lecture en cours de Windows (Spotify, navigateurs, VLC…), pochette, contrôles, volume |
 | Raccourcis | Ouvrir appli/URL/protocole, combinaisons de touches, commandes, changement de page |
-| Deck | Façon Stream Deck : actions en chaîne avec pauses, boutons à deux états, dossiers, vraies icônes de logiciels |
+| Deck | Façon Stream Deck : actions en chaîne avec pauses, boutons à deux états, dossiers, vraies icônes de logiciels, dossier ShareX prêt à l'emploi (bouton « Tester » et message d'erreur en cas de souci) |
 | Page web | Intègre Home Assistant, Grafana, etc. |
 | Applications | Tes logiciels en un toucher, avec leurs vraies icônes (recherche parmi les applis installées ou chemin d'un .exe) |
 | Son | Volume et sourdine de la sortie et du micro, volume de chaque appli |
