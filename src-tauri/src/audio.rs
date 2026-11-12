@@ -20,7 +20,7 @@ pub struct AppVolume {
     muted: bool,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AudioState {
     output: Option<Endpoint>,
@@ -30,7 +30,24 @@ pub struct AudioState {
 
 #[tauri::command]
 pub async fn audio_state() -> Result<AudioState, String> {
-    tauri::async_runtime::spawn_blocking(imp::state).await.map_err(|e| e.to_string())?
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Mutex;
+    // Une seule lecture à la fois : pas d'empilement si le service audio de Windows est occupé.
+    static BUSY: AtomicBool = AtomicBool::new(false);
+    static LAST: Mutex<Option<AudioState>> = Mutex::new(None);
+    if BUSY.swap(true, Ordering::SeqCst) {
+        if let Some(v) = LAST.lock().ok().and_then(|g| g.clone()) {
+            return Ok(v);
+        }
+        return Err("lecture du son en cours".into());
+    }
+    let r = tauri::async_runtime::spawn_blocking(imp::state).await;
+    BUSY.store(false, Ordering::SeqCst);
+    let v = r.map_err(|e| e.to_string())??;
+    if let Ok(mut g) = LAST.lock() {
+        *g = Some(v.clone());
+    }
+    Ok(v)
 }
 
 /// `target` : "output", "input" ou "app:<pid>". `volume` de 0 à 100.

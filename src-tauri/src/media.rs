@@ -3,7 +3,7 @@
 
 use serde::Serialize;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct MediaInfo {
     title: String,
     artist: String,
@@ -53,9 +53,23 @@ pub fn sniff_image(b: &[u8]) -> Option<&'static str> {
 pub async fn media_info() -> Result<Option<MediaInfo>, String> {
     #[cfg(windows)]
     {
-        tauri::async_runtime::spawn_blocking(|| win::current().map_err(|e| e.to_string()))
-            .await
-            .map_err(|e| e.to_string())?
+        use std::sync::atomic::{AtomicBool, Ordering};
+        use std::sync::Mutex;
+        // Une seule requête à la fois vers le service média de Windows : si la précédente est encore
+        // en cours (service occupé, panneau média affiché…), on renvoie la dernière valeur connue au lieu
+        // d'empiler des requêtes bloquées chaque seconde.
+        static BUSY: AtomicBool = AtomicBool::new(false);
+        static LAST: Mutex<Option<MediaInfo>> = Mutex::new(None);
+        if BUSY.swap(true, Ordering::SeqCst) {
+            return Ok(LAST.lock().ok().and_then(|g| g.clone()));
+        }
+        let r = tauri::async_runtime::spawn_blocking(|| win::current().map_err(|e| e.to_string())).await;
+        BUSY.store(false, Ordering::SeqCst);
+        let v = r.map_err(|e| e.to_string())??;
+        if let Ok(mut g) = LAST.lock() {
+            *g = v.clone();
+        }
+        Ok(v)
     }
     #[cfg(not(windows))]
     {
@@ -99,8 +113,22 @@ mod win {
     /// Mémorise la dernière pochette pour ne pas la relire chaque seconde.
     static THUMB_CACHE: Mutex<Option<(String, Option<String>)>> = Mutex::new(None);
 
+    /// Gestionnaire des sessions média, créé une seule fois puis réutilisé.
+    static MANAGER: Mutex<Option<Manager>> = Mutex::new(None);
+
     fn session() -> Result<Option<Session>> {
-        let manager = Manager::RequestAsync()?.get()?;
+        let cached = MANAGER.lock().ok().and_then(|g| g.clone());
+        let manager = match cached {
+            Some(m) => m,
+            None => {
+                let m = Manager::RequestAsync()?.get()?;
+                if let Ok(mut g) = MANAGER.lock() {
+                    *g = Some(m.clone());
+                }
+                m
+            }
+        };
+        // Pas de lecture en cours : Windows renvoie une erreur, ce n'en est pas une pour nous.
         Ok(manager.GetCurrentSession().ok())
     }
 
