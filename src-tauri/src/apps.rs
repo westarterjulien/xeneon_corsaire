@@ -51,7 +51,7 @@ pub async fn app_icon(id: String) -> Option<String> {
     icon
 }
 
-/// Chemin de ShareX s'il est installé (registre « App Paths », dossiers habituels, version Steam).
+/// Chemin de ShareX : processus en cours, registre, dossiers habituels, Store, Steam, PATH.
 #[tauri::command]
 pub fn sharex_path() -> Option<String> {
     imp::sharex()
@@ -127,6 +127,18 @@ mod imp {
         ok.then(|| String::from_utf16_lossy(&buf[..(size as usize / 2).saturating_sub(1)]).trim_matches('"').to_string())
     }
 
+    /// Chemin de l'exécutable d'un processus en cours, par nom de fichier (insensible à la casse).
+    fn running_exe(file: &str) -> Option<String> {
+        use sysinfo::{ProcessesToUpdate, System};
+        let mut sys = System::new();
+        sys.refresh_processes(ProcessesToUpdate::All, true);
+        sys.processes()
+            .values()
+            .filter(|p| p.name().to_string_lossy().eq_ignore_ascii_case(file))
+            .find_map(|p| p.exe().map(|e| e.display().to_string()))
+            .filter(|p| present(p))
+    }
+
     /// Le fichier existe (y compris les alias d'exécution des applis du Store, qui sont des points d'analyse).
     fn present(p: &str) -> bool {
         !p.is_empty() && std::fs::symlink_metadata(p).is_ok()
@@ -134,6 +146,10 @@ mod imp {
 
     pub fn sharex() -> Option<String> {
         use windows::Win32::System::Registry::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
+        // 0. ShareX tourne en général en arrière-plan : son processus donne le chemin exact, où qu'il soit installé.
+        if let Some(p) = running_exe("sharex.exe") {
+            return Some(p);
+        }
         let env = |k: &str| std::env::var(k).unwrap_or_default();
         let mut candidates: Vec<String> = Vec::new();
         // 1. Chemin déclaré par l'installateur (App Paths) et dossier d'installation du désinstalleur.

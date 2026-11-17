@@ -84,9 +84,15 @@ pub async fn run_action(action: Action) -> Result<(), String> {
         Action::Run { program, args } => {
             let program = expand_env(program.trim().trim_matches('"'));
             let name = program.rsplit(['\\', '/']).next().unwrap_or(&program).to_string();
-            // Chemin complet introuvable : message clair plutôt qu'une erreur système.
+            // Chemin complet introuvable : pour ShareX, on le retrouve automatiquement (boutons créés avec
+            // un chemin par défaut) ; sinon, message clair plutôt qu'une erreur système.
+            let mut program = program;
             if (program.contains('\\') || program.contains('/')) && std::fs::symlink_metadata(&program).is_err() {
-                return Err(format!("{name} introuvable à cet emplacement : {program}"));
+                match (name.eq_ignore_ascii_case("ShareX.exe"), crate::apps::sharex_path()) {
+                    (true, Some(found)) => program = found,
+                    (true, None) => return Err("ShareX introuvable : lance ShareX une fois (il restera près de l'horloge), puis réessaie".into()),
+                    _ => return Err(format!("{name} introuvable à cet emplacement : {program}")),
+                }
             }
             let mut c = Command::new(&program);
             c.args(&args);
