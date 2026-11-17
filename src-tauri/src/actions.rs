@@ -84,6 +84,12 @@ pub async fn run_action(action: Action) -> Result<(), String> {
         Action::Run { program, args } => {
             let program = expand_env(program.trim().trim_matches('"'));
             let name = program.rsplit(['\\', '/']).next().unwrap_or(&program).to_string();
+            // ShareX : lancement robuste (installation classique, Microsoft Store, Steam), le chemin enregistré
+            // dans le bouton ne sert que d'indication.
+            if name.eq_ignore_ascii_case("ShareX.exe") {
+                let a = args.clone();
+                return tauri::async_runtime::spawn_blocking(move || crate::apps::launch_sharex(&a)).await.map_err(|e| e.to_string())?;
+            }
             // Chemin complet introuvable : pour ShareX, on le retrouve automatiquement (boutons créés avec
             // un chemin par défaut) ; sinon, message clair plutôt qu'une erreur système.
             let mut program = program;

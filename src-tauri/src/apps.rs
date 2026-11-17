@@ -51,6 +51,11 @@ pub async fn app_icon(id: String) -> Option<String> {
     icon
 }
 
+/// Lance ShareX avec un argument, quelle que soit son installation (classique, Store, Steam).
+pub fn launch_sharex(args: &[String]) -> Result<(), String> {
+    imp::launch_sharex(args)
+}
+
 /// Chemin de ShareX : processus en cours, registre, dossiers habituels, Store, Steam, PATH.
 #[tauri::command]
 pub fn sharex_path() -> Option<String> {
@@ -82,6 +87,9 @@ mod imp {
     }
     pub fn sharex() -> Option<String> {
         None
+    }
+    pub fn launch_sharex(_: &[String]) -> Result<(), String> {
+        Err("disponible uniquement sous Windows".into())
     }
 }
 
@@ -127,6 +135,47 @@ mod imp {
         ok.then(|| String::from_utf16_lossy(&buf[..(size as usize / 2).saturating_sub(1)]).trim_matches('"').to_string())
     }
 
+    /// Dossier protégé des applis du Store : on ne peut pas y lancer un exécutable directement.
+    pub fn is_packaged(path: &str) -> bool {
+        path.to_ascii_lowercase().contains("\\program files\\windowsapps\\")
+    }
+
+    /// Lance ShareX : exécutable classique, sinon alias du Store, sinon activation Windows de l'appli du Store.
+    pub fn launch_sharex(args: &[String]) -> Result<(), String> {
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        let spawn = |p: &str| Command::new(p).args(args).creation_flags(CREATE_NO_WINDOW).spawn().map(|_| ());
+        if let Some(p) = sharex() {
+            if spawn(&p).is_ok() {
+                return Ok(());
+            }
+        }
+        // Version Microsoft Store : alias d'exécution (accepte les arguments) …
+        let alias = format!("{}\\Microsoft\\WindowsApps\\ShareX.exe", std::env::var("LOCALAPPDATA").unwrap_or_default());
+        if present(&alias) && spawn(&alias).is_ok() {
+            return Ok(());
+        }
+        // … sinon activation officielle de l'appli, avec ses arguments.
+        let aumid = list()
+            .ok()
+            .and_then(|apps| apps.into_iter().find(|a| a.name.eq_ignore_ascii_case("ShareX") && a.id.contains('!')).map(|a| a.id))
+            .ok_or("ShareX introuvable : lance ShareX une fois (il restera près de l'horloge), puis réessaie")?;
+        activate(&aumid, &args.join(" "))
+    }
+
+    /// Démarre une appli du Store (AppUserModelID) en lui passant des arguments.
+    fn activate(aumid: &str, args: &str) -> Result<(), String> {
+        use windows::core::HSTRING;
+        use windows::Win32::System::Com::{CoCreateInstance, CoInitializeEx, CLSCTX_LOCAL_SERVER, COINIT_APARTMENTTHREADED};
+        use windows::Win32::UI::Shell::{ApplicationActivationManager, IApplicationActivationManager, AO_NONE};
+        unsafe {
+            let _ = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
+            let mgr: IApplicationActivationManager = CoCreateInstance(&ApplicationActivationManager, None, CLSCTX_LOCAL_SERVER).map_err(|e| e.to_string())?;
+            mgr.ActivateApplication(&HSTRING::from(aumid), &HSTRING::from(args), AO_NONE)
+                .map(|_| ())
+                .map_err(|e| format!("Windows refuse de lancer ShareX : {e}"))
+        }
+    }
+
     /// Chemin de l'exécutable d'un processus en cours, par nom de fichier (insensible à la casse).
     fn running_exe(file: &str) -> Option<String> {
         use sysinfo::{ProcessesToUpdate, System};
@@ -147,7 +196,8 @@ mod imp {
     pub fn sharex() -> Option<String> {
         use windows::Win32::System::Registry::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
         // 0. ShareX tourne en général en arrière-plan : son processus donne le chemin exact, où qu'il soit installé.
-        if let Some(p) = running_exe("sharex.exe") {
+        //    Sauf la version Microsoft Store : son dossier (WindowsApps) ne peut pas être lancé directement.
+        if let Some(p) = running_exe("sharex.exe").filter(|p| !is_packaged(p)) {
             return Some(p);
         }
         let env = |k: &str| std::env::var(k).unwrap_or_default();
