@@ -19,6 +19,7 @@ mod secret;
 mod studio;
 mod system;
 mod taskbar;
+mod updater;
 mod user_widgets;
 
 use tauri::Manager;
@@ -67,6 +68,9 @@ pub fn run() {
             display::move_to_monitor,
             brightness::brightness_list,
             brightness::brightness_set,
+            updater::update_status,
+            updater::update_check,
+            updater::update_install,
             user_widgets::user_widgets,
             user_widgets::create_user_widget,
             studio::open_studio,
@@ -102,6 +106,7 @@ pub fn run() {
             foreground::start();
             clipboard::start();
             discord::start(app.handle().clone());
+            updater::start(app.handle().clone());
             let preferred = config::read(app.handle())
                 .and_then(|c| c.pointer("/display/monitor").and_then(|m| m.as_str()).map(str::to_owned));
             if let Err(e) = display::place_on_edge(&window, preferred.as_deref()) {

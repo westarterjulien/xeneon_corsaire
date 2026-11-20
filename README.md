@@ -37,6 +37,12 @@ Application **Tauri 2** (backend Rust + interface React/TypeScript), légère et
 
 L'appli s'ouvre sur l'Edge, se relance avec Windows et vit dans la zone de notification (clic = Studio). Chaque mise à jour de `main` produit automatiquement un nouvel installateur (GitHub Actions).
 
+**Mises à jour automatiques** : l'appli vérifie la dernière version au démarrage puis toutes les 6 heures, télécharge
+l'installateur, contrôle son empreinte SHA-256 publiée par GitHub et l'installe en silence (fermeture puis relance de
+quelques secondes, jamais pendant un jeu ou une vidéo en plein écran). Réglable dans Studio → Apparence → Mises à jour
+(« Rechercher une mise à jour », « Installer maintenant », installation automatique on/off). Le numéro de build vient
+de `GITHUB_RUN_NUMBER` à la compilation : une version compilée à la main ne se met pas à jour.
+
 ## Développer
 
 Prérequis : [Node.js 20+](https://nodejs.org), [Rust](https://rustup.rs) (toolchain MSVC + « Desktop development with C++ » de Visual Studio Build Tools), WebView2 (déjà présent sur Windows 11).
@@ -151,6 +157,7 @@ src/
 src-tauri/src/
   display.rs         détection de l'Edge et placement de la fenêtre
   brightness.rs      luminosité des écrans par DDC/CI (dxva2), un seul échange à la fois
+  updater.rs         mise à jour automatique depuis les Releases GitHub (installateur NSIS silencieux)
   system.rs          CPU/RAM (sysinfo) + capteurs LibreHardwareMonitor
   media.rs           lecture en cours Windows (SMTC) + contrôles
   keys.rs            simulation de touches (SendInput)

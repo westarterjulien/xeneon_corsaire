@@ -51,6 +51,8 @@ export interface AppConfig {
     softDim: number;
   };
   night: NightMode;
+  /** Mise à jour automatique depuis les Releases GitHub. */
+  updates: { auto: boolean };
   pages: Page[];
 }
 
@@ -92,6 +94,7 @@ export function defaultConfig(): AppConfig {
     theme: { accent: "#a9c4ff", background: "#07090c" },
     display: { monitor: null, hideTaskbar: true, softDim: 0 },
     night: { enabled: false, from: "23:00", to: "07:00", mode: "clock", level: 75, backlight: false, backlightLevel: 10 },
+    updates: { auto: true },
     pages: [
       {
         id: uid(),
@@ -139,6 +142,7 @@ export function sanitizeConfig(raw: unknown): AppConfig {
     theme,
     display: { ...base.display, ...(c.display ?? {}), softDim: clampDim((c.display as { softDim?: unknown } | undefined)?.softDim) },
     night: { ...base.night, ...(c.night ?? {}) },
+    updates: { auto: c.updates?.auto !== false },
     pages,
   };
 }

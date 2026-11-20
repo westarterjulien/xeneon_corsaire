@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { bridge, isTauri, type MonitorInfo, type ScreenBrightness } from "../bridge";
+import { bridge, isTauri, type MonitorInfo, type ScreenBrightness, type UpdateStatus } from "../bridge";
 import { setScreenBrightness, useBrightness } from "../sdk/brightness";
 import { Slider } from "../sdk/components";
 import { Icon } from "../sdk/icons";
@@ -256,6 +256,75 @@ export function AppSettings({ config, onChange, onClose }: { config: AppConfig; 
   );
 }
 
+/** Mise à jour : version installée, dernière version, installation automatique ou à la demande. */
+function UpdatesForm({ config, onChange }: { config: AppConfig; onChange: (c: AppConfig) => void }) {
+  const [st, setSt] = useState<UpdateStatus | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const busy = st?.state === "checking" || st?.state === "downloading" || st?.state === "installing";
+  useEffect(() => {
+    let alive = true;
+    const load = () => bridge.updateStatus().then((s) => alive && setSt(s)).catch(() => {});
+    void load();
+    // Suivi en direct pendant une vérification ou un téléchargement (y compris lancé automatiquement).
+    const id = window.setInterval(load, busy ? 1000 : 15_000);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+    };
+  }, [busy]);
+  const check = async () => {
+    setError(null);
+    setSt((s) => (s ? { ...s, state: "checking" } : s));
+    try {
+      setSt(await bridge.updateCheck());
+    } catch (e) {
+      setError(String(e));
+    }
+  };
+  const install = async () => {
+    setError(null);
+    setSt((s) => (s ? { ...s, state: "downloading", progress: 0 } : s));
+    try {
+      await bridge.updateInstall();
+    } catch (e) {
+      setError(String(e).replace(/^Error: /, ""));
+      bridge.updateStatus().then(setSt).catch(() => {});
+    }
+  };
+  const dev = st && st.current === null;
+  const when = st?.checkedAt ? new Date(st.checkedAt).toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" }) : null;
+  return (
+    <div className="form-row is-wide">
+      <span className="form-label">Mises à jour</span>
+      <span className="upd-line">
+        {dev ? "Version de développement (pas de mise à jour automatique)" : st ? `Build ${st.current} installée` : "…"}
+        {st?.latest != null && !dev && (st.available ? <b className="upd-new"> · build {st.latest} disponible</b> : " · à jour")}
+      </span>
+      {st?.state === "downloading" && <span className="upd-line">Téléchargement… {st.progress ?? 0} %</span>}
+      {st?.state === "installing" && <span className="upd-line">Installation : Edge Studio va se fermer puis se relancer.</span>}
+      <div className="form-inline-row">
+        <button type="button" className="chip" onClick={() => void check()} disabled={busy || !isTauri}>
+          {st?.state === "checking" ? "Vérification…" : "Rechercher une mise à jour"}
+        </button>
+        {st?.available && !dev && (
+          <button type="button" className="chip is-active" onClick={() => void install()} disabled={busy}>
+            Installer la build {st.latest} maintenant
+          </button>
+        )}
+      </div>
+      <label className="form-inline-row">
+        <input type="checkbox" checked={config.updates.auto} onChange={(e) => onChange({ ...config, updates: { auto: e.target.checked } })} />
+        <span>Installer automatiquement les nouvelles versions</span>
+      </label>
+      {(error || st?.error) && <span className="form-help bri-ko">{error || st?.error}</span>}
+      <span className="form-help">
+        Vérification au démarrage puis toutes les 6 heures{when ? ` (dernière : ${when})` : ""}. L'installation automatique attend qu'aucun jeu ou vidéo ne
+        soit en plein écran ; l'appli se ferme quelques secondes puis se relance.
+      </span>
+    </div>
+  );
+}
+
 const screenLabel = (s: ScreenBrightness, i: number) => (s.isEdge ? "Xeneon Edge" : s.label || `Écran ${i + 1}`);
 
 /** Luminosité : test DDC/CI de chaque écran, curseurs, voile logiciel de secours. */
@@ -357,6 +426,7 @@ export function AppearanceForm({ config, onChange }: { config: AppConfig; onChan
             <span>Masquer la barre des tâches Windows sur l'Edge</span>
           </label>
         )}
+        <UpdatesForm config={config} onChange={onChange} />
         <div className="form-row is-wide">
           <span className="form-label">Mode nuit</span>
           <label className="form-inline-row">

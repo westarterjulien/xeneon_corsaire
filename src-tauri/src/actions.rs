@@ -18,14 +18,14 @@ pub enum Action {
 }
 
 #[cfg(windows)]
-fn hidden(cmd: &mut Command) -> &mut Command {
+pub(crate) fn hidden(cmd: &mut Command) -> &mut Command {
     use std::os::windows::process::CommandExt;
     const CREATE_NO_WINDOW: u32 = 0x0800_0000;
     cmd.creation_flags(CREATE_NO_WINDOW)
 }
 
 #[cfg(not(windows))]
-fn hidden(cmd: &mut Command) -> &mut Command {
+pub(crate) fn hidden(cmd: &mut Command) -> &mut Command {
     cmd
 }
 

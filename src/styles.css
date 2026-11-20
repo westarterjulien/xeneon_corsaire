@@ -233,3 +233,7 @@ input, select, textarea { font: inherit; color: inherit; user-select: text; -web
 .bri-test { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; font-weight: 300; line-height: 1.45; }
 .bri-ok::marker { color: #34d399; }
 .bri-ko { color: #fca5a5; }
+
+/* Mises à jour */
+.upd-line { font-weight: 300; }
+.upd-new { color: var(--accent); font-weight: 500; }

@@ -155,6 +155,21 @@ export interface MonitorInfo {
   isEdge: boolean;
 }
 
+/** État de la mise à jour automatique (Releases GitHub). */
+export interface UpdateStatus {
+  /** Build installée ; null pour une version de développement. */
+  current: number | null;
+  latest: number | null;
+  available: boolean;
+  notes: string;
+  published: string | null;
+  state: "idle" | "checking" | "downloading" | "installing" | "error";
+  /** Téléchargement en %. */
+  progress: number | null;
+  error: string | null;
+  checkedAt: number | null;
+}
+
 /** Luminosité d'un écran (DDC/CI). */
 export interface ScreenBrightness {
   /** Nom Windows de l'écran (même valeur que MonitorInfo.name). */
@@ -262,6 +277,11 @@ const mockClips: Clip[] = [
   { id: 1, text: "SELECT * FROM commandes WHERE statut = 'en_attente';", at: Date.now() - 3_600_000 },
 ];
 let mockPresence = "Available";
+let mockChecked: number | null = null;
+const mockUpdate = (checkedAt?: number): UpdateStatus => {
+  if (checkedAt) mockChecked = checkedAt;
+  return { current: 25, latest: 26, available: true, notes: "Simulation : nouvelle version disponible.", published: new Date().toISOString(), state: "idle", progress: null, error: null, checkedAt: mockChecked };
+};
 const mockScreens: ScreenBrightness[] = [
   { name: "\\\\.\\DISPLAY2", label: "", isEdge: true, width: 2560, height: 720, supported: true, value: 70, error: null },
   { name: "\\\\.\\DISPLAY1", label: "Écran principal", isEdge: false, width: 2560, height: 1440, supported: true, value: 45, error: null },
@@ -499,6 +519,12 @@ export const bridge = {
 
   /** Ouvre (ou ramène au premier plan) la fenêtre Studio. */
   openStudio: (): Promise<void> => call("open_studio"),
+
+  // ---------- Mise à jour automatique ----------
+  updateStatus: (): Promise<UpdateStatus> => (isTauri ? call("update_status") : Promise.resolve(mockUpdate())),
+  updateCheck: (): Promise<UpdateStatus> => (isTauri ? call("update_check") : Promise.resolve(mockUpdate(Date.now()))),
+  /** Télécharge et installe la nouvelle version : l'appli se ferme puis se relance. */
+  updateInstall: (): Promise<void> => (isTauri ? call("update_install") : Promise.reject(new Error("Mise à jour disponible dans l'appli Windows."))),
 
   // ---------- Luminosité (DDC/CI) ----------
   /** Écrans et leur luminosité ; une lecture peut prendre jusqu'à une demi-seconde. */

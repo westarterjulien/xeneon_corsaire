@@ -26,6 +26,11 @@ pub fn foreground_app() -> Option<Foreground> {
     LAST.lock().ok().and_then(|g| g.as_ref().map(|l| l.info.clone()))
 }
 
+/// Une appli est en plein écran au premier plan (jeu, vidéo).
+pub fn is_fullscreen() -> bool {
+    LAST.lock().ok().and_then(|g| g.as_ref().map(|l| l.info.fullscreen)).unwrap_or(false)
+}
+
 pub fn exe_stem(path: &str) -> String {
     let file = path.rsplit(['\\', '/']).next().unwrap_or(path).to_lowercase();
     file.strip_suffix(".exe").unwrap_or(&file).to_string()

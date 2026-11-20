@@ -38,7 +38,7 @@ struct Stored {
     account: String,
 }
 
-fn agent() -> Result<ureq::Agent, String> {
+pub(crate) fn agent() -> Result<ureq::Agent, String> {
     let tls = native_tls::TlsConnector::new().map_err(|e| e.to_string())?;
     Ok(ureq::AgentBuilder::new().tls_connector(Arc::new(tls)).timeout(Duration::from_secs(20)).build())
 }
