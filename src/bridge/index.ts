@@ -514,6 +514,11 @@ export const bridge = {
   },
   discordForget: (): Promise<void> => (isTauri ? call("discord_forget") : Promise.resolve()),
 
+  /** Toucher l'Edge sans prendre le focus ni la souris de l'appli en cours (désactivé pour taper au clavier). */
+  touchGuard: (keepFocus: boolean): Promise<void> => (isTauri ? call("touch_guard", { keepFocus }) : Promise.resolve()),
+  /** Fin d'un toucher : la souris revient à sa position d'avant. */
+  cursorRestore: (): Promise<void> => (isTauri ? call("cursor_restore") : Promise.resolve()),
+
   /** Masque (ou réaffiche) la barre des tâches Windows sur l'écran de l'Edge. */
   taskbarSet: (hidden: boolean): Promise<void> => (isTauri ? call("taskbar_set", { hidden }) : Promise.resolve()),
 

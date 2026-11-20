@@ -53,6 +53,12 @@ npm run tauri dev      # développement, rechargement à chaud
 npm run tauri build    # installateur dans src-tauri\target\release\bundle\
 ```
 
+### Toucher l'Edge pendant un jeu
+
+Par défaut, toucher l'Edge ne retire pas le focus au jeu en plein écran et la souris revient où elle était à la fin
+du toucher (Studio → Apparence → « Toucher l'Edge sans quitter le jeu »). En mode édition, l'Edge redevient
+utilisable au clavier.
+
 ### Régler le tactile une fois
 
 Si les touchers arrivent sur l'écran principal : **Panneau de configuration → Paramètres du Tablet PC → Configurer → Entrée tactile**, puis toucher l'Edge quand Windows le demande.
@@ -157,6 +163,7 @@ src/
 src-tauri/src/
   display.rs         détection de l'Edge et placement de la fenêtre
   brightness.rs      luminosité des écrans par DDC/CI (dxva2), un seul échange à la fois
+  touch.rs           toucher sans voler le focus (WS_EX_NOACTIVATE) ni la souris (position restaurée)
   updater.rs         mise à jour automatique depuis les Releases GitHub (installateur NSIS silencieux)
   system.rs          CPU/RAM (sysinfo) + capteurs LibreHardwareMonitor
   media.rs           lecture en cours Windows (SMTC) + contrôles

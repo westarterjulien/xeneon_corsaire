@@ -19,6 +19,7 @@ mod secret;
 mod studio;
 mod system;
 mod taskbar;
+mod touch;
 mod updater;
 mod user_widgets;
 
@@ -71,6 +72,8 @@ pub fn run() {
             updater::update_status,
             updater::update_check,
             updater::update_install,
+            touch::cursor_restore,
+            touch::touch_guard,
             user_widgets::user_widgets,
             user_widgets::create_user_widget,
             studio::open_studio,
@@ -111,6 +114,14 @@ pub fn run() {
                 .and_then(|c| c.pointer("/display/monitor").and_then(|m| m.as_str()).map(str::to_owned));
             if let Err(e) = display::place_on_edge(&window, preferred.as_deref()) {
                 eprintln!("[display] {e}");
+            }
+            // Toucher l'Edge ne vole ni le focus ni la souris au jeu en cours (option, activée par défaut).
+            let keep_focus = config::read(app.handle())
+                .and_then(|c| c.pointer("/display/keepFocus").and_then(|v| v.as_bool()))
+                .unwrap_or(true);
+            touch::start();
+            if let Err(e) = touch::touch_guard(window.clone(), keep_focus) {
+                eprintln!("[toucher] {e}");
             }
             if let Err(e) = user_widgets::seed(app.handle()) {
                 eprintln!("[widgets] {e}");

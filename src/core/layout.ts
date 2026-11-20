@@ -47,6 +47,8 @@ export interface AppConfig {
   display: {
     monitor: string | null;
     hideTaskbar: boolean;
+    /** Toucher l'Edge ne prend ni le focus ni la souris de l'appli en cours (jeu en plein écran). */
+    keepFocus: boolean;
     /** Voile logiciel permanent sur l'Edge, en % (secours quand l'écran ne répond pas au DDC/CI). */
     softDim: number;
   };
@@ -92,7 +94,7 @@ export function defaultConfig(): AppConfig {
   return {
     version: 1,
     theme: { accent: "#a9c4ff", background: "#07090c" },
-    display: { monitor: null, hideTaskbar: true, softDim: 0 },
+    display: { monitor: null, hideTaskbar: true, keepFocus: true, softDim: 0 },
     night: { enabled: false, from: "23:00", to: "07:00", mode: "clock", level: 75, backlight: false, backlightLevel: 10 },
     updates: { auto: true },
     pages: [

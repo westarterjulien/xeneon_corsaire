@@ -426,6 +426,19 @@ export function AppearanceForm({ config, onChange }: { config: AppConfig; onChan
             <span>Masquer la barre des tâches Windows sur l'Edge</span>
           </label>
         )}
+        {isTauri && (
+          <div className="form-row is-wide">
+            <label className="form-inline-row">
+              <input
+                type="checkbox"
+                checked={config.display.keepFocus}
+                onChange={(e) => onChange({ ...config, display: { ...config.display, keepFocus: e.target.checked } })}
+              />
+              <span>Toucher l'Edge sans quitter le jeu (le focus et la souris restent sur l'appli en cours)</span>
+            </label>
+            <span className="form-help">En mode édition, l'Edge redevient utilisable au clavier pour renommer et régler.</span>
+          </div>
+        )}
         <UpdatesForm config={config} onChange={onChange} />
         <div className="form-row is-wide">
           <span className="form-label">Mode nuit</span>

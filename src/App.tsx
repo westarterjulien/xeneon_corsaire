@@ -190,6 +190,24 @@ export default function App() {
     };
   }, [nightBacklight, nightLevel]);
 
+  // Toucher sans voler le focus ni la souris au jeu : actif hors mode édition (le clavier sert alors à taper).
+  const keepFocus = (config?.display.keepFocus ?? true) && !editing && !panel;
+  useEffect(() => {
+    void bridge.touchGuard(keepFocus).catch((e) => console.error("[toucher]", e));
+  }, [keepFocus]);
+  useEffect(() => {
+    if (!keepFocus) return;
+    const end = (e: PointerEvent) => {
+      if (e.pointerType === "touch") void bridge.cursorRestore().catch(() => {});
+    };
+    window.addEventListener("pointerup", end, true);
+    window.addEventListener("pointercancel", end, true);
+    return () => {
+      window.removeEventListener("pointerup", end, true);
+      window.removeEventListener("pointercancel", end, true);
+    };
+  }, [keepFocus]);
+
   // Voile logiciel permanent (Edge sans DDC/CI).
   const softDim = config?.display.softDim ?? 0;
   const softApi = useMemo(
