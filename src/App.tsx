@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent } from "react";
 import { bridge, isTauri } from "./bridge";
 import { Grid } from "./core/Grid";
-import { createInstance, findFreeSpot, moveWidget, uid, type WidgetInstance } from "./core/layout";
+import { clampDim, createInstance, findFreeSpot, moveWidget, uid, type WidgetInstance } from "./core/layout";
 import { useAppConfig } from "./core/store";
 import { publish, subscribe } from "./core/sync";
 import { AppSettings, Palette, WidgetSettings } from "./core/Panels";
@@ -12,6 +12,26 @@ import type { Foreground } from "./bridge";
 import { ThemeContext } from "./sdk/theme";
 import { useUserWidgetsLoader } from "./core/userWidgets";
 import { PageContext } from "./sdk/page";
+import { edgeScreen, setScreenBrightness, SoftDimContext } from "./sdk/brightness";
+
+/** Luminosité de l'Edge avant le mode nuit, à restaurer (gardée aussi si l'appli est fermée pendant la nuit). */
+const NIGHT_KEY = "edge-studio:night-brightness";
+const readNightSaved = (): { name: string; value: number } | null => {
+  try {
+    const raw = localStorage.getItem(NIGHT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+const writeNightSaved = (v: { name: string; value: number } | null) => {
+  try {
+    if (v) localStorage.setItem(NIGHT_KEY, JSON.stringify(v));
+    else localStorage.removeItem(NIGHT_KEY);
+  } catch {
+    /* stockage indisponible */
+  }
+};
 
 type Panel = { kind: "palette" } | { kind: "widget"; id: string } | { kind: "app" } | null;
 
@@ -141,6 +161,42 @@ export default function App() {
       return a <= b ? cur >= a && cur < b : cur >= a || cur < b;
     })();
 
+  // Mode nuit : vrai rétroéclairage de l'Edge baissé (DDC/CI), puis rétabli au réveil ou à la fin de la nuit.
+  const nightBacklight = inNight && !!night?.backlight;
+  const nightLevel = night?.backlightLevel ?? 10;
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const saved = readNightSaved();
+        if (!nightBacklight) {
+          if (saved) {
+            writeNightSaved(null);
+            await setScreenBrightness(saved.name, saved.value);
+          }
+          return;
+        }
+        const edge = edgeScreen(await bridge.brightnessList());
+        if (cancelled || !edge?.supported) return;
+        // Déjà en nuit (niveau modifié) : on garde la valeur d'origine.
+        if (!saved) writeNightSaved({ name: edge.name, value: edge.value ?? 100 });
+        await setScreenBrightness(edge.name, nightLevel);
+      } catch (e) {
+        console.error("[nuit] luminosité", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [nightBacklight, nightLevel]);
+
+  // Voile logiciel permanent (Edge sans DDC/CI).
+  const softDim = config?.display.softDim ?? 0;
+  const softApi = useMemo(
+    () => ({ value: softDim, set: (v: number) => setConfig((c) => (c ? { ...c, display: { ...c.display, softDim: clampDim(v) } } : c)) }),
+    [softDim, setConfig],
+  );
+
   const style = useMemo(
     () => (config ? ({ "--accent": config.theme.accent, "--bg": config.theme.background } as CSSProperties) : undefined),
     [config?.theme.accent, config?.theme.background],
@@ -157,6 +213,7 @@ export default function App() {
   return (
     <ThemeContext.Provider value={theme}>
     <PageContext.Provider value={pageApi}>
+    <SoftDimContext.Provider value={softApi}>
       <div className="app" style={style} onPointerDown={onPointerDown} onPointerUp={onPointerUp}>
         <div className="pages" style={{ transform: `translateX(-${pageIndex * 100}%)` }}>
           {config.pages.map((p, i) => (
@@ -221,6 +278,7 @@ export default function App() {
         )}
         {panel?.kind === "app" && <AppSettings config={config} onChange={setConfig} onClose={() => setPanel(null)} />}
         {notice && <div className="toast">{notice}</div>}
+        {softDim > 0 && <div className="soft-dim" style={{ background: `rgba(0, 0, 0, ${softDim / 100})` }} />}
         {inNight && night && (
           <div
             className={`night night-${night.mode}`}
@@ -239,6 +297,7 @@ export default function App() {
           </div>
         )}
       </div>
+    </SoftDimContext.Provider>
     </PageContext.Provider>
     </ThemeContext.Provider>
   );

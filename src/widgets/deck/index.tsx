@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from "react";
 import { Kicker } from "../../sdk/components";
 import { Icon } from "../../sdk/icons";
 import { usePages } from "../../sdk/page";
+import { useSoftDim } from "../../sdk/brightness";
 import { defineWidget } from "../../sdk/types";
 import { DeckEditor } from "./DeckEditor";
 import { FaceVisual } from "./face";
@@ -46,6 +47,7 @@ export default defineWidget<Settings>({
   ],
   component: ({ settings, updateSettings }) => {
     const pages = usePages();
+    const softDim = useSoftDim();
     const [path, setPath] = useState<string[]>([]);
     const [busy, setBusy] = useState<string | null>(null);
     const [failed, setFailed] = useState<{ id: string; msg: string } | null>(null);
@@ -64,7 +66,7 @@ export default defineWidget<Settings>({
       const second = !!b.alt && !!states[b.id];
       setBusy(b.id);
       try {
-        await runSteps(second ? b.alt!.steps : b.steps, pages.goTo);
+        await runSteps(second ? b.alt!.steps : b.steps, pages.goTo, softDim);
         if (b.alt) updateSettings({ states: { ...states, [b.id]: !second } });
       } catch (e) {
         console.error("[deck]", b.label, e);

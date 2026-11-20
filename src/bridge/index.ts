@@ -155,6 +155,22 @@ export interface MonitorInfo {
   isEdge: boolean;
 }
 
+/** Luminosité d'un écran (DDC/CI). */
+export interface ScreenBrightness {
+  /** Nom Windows de l'écran (même valeur que MonitorInfo.name). */
+  name: string;
+  /** Description fournie par l'écran (souvent vide). */
+  label: string;
+  isEdge: boolean;
+  width: number;
+  height: number;
+  /** L'écran répond au DDC/CI : sa vraie luminosité est réglable. */
+  supported: boolean;
+  /** 0 à 100. */
+  value: number | null;
+  error: string | null;
+}
+
 export interface UserWidgetManifest {
   id: string;
   name?: string;
@@ -246,6 +262,10 @@ const mockClips: Clip[] = [
   { id: 1, text: "SELECT * FROM commandes WHERE statut = 'en_attente';", at: Date.now() - 3_600_000 },
 ];
 let mockPresence = "Available";
+const mockScreens: ScreenBrightness[] = [
+  { name: "\\\\.\\DISPLAY2", label: "", isEdge: true, width: 2560, height: 720, supported: true, value: 70, error: null },
+  { name: "\\\\.\\DISPLAY1", label: "Écran principal", isEdge: false, width: 2560, height: 1440, supported: true, value: 45, error: null },
+];
 const mockHa: HaEntity[] = [
   { entityId: "light.salon", domain: "light", name: "Salon", state: "on", unit: null, deviceClass: null },
   { entityId: "light.bureau", domain: "light", name: "Bureau", state: "off", unit: null, deviceClass: null },
@@ -479,6 +499,17 @@ export const bridge = {
 
   /** Ouvre (ou ramène au premier plan) la fenêtre Studio. */
   openStudio: (): Promise<void> => call("open_studio"),
+
+  // ---------- Luminosité (DDC/CI) ----------
+  /** Écrans et leur luminosité ; une lecture peut prendre jusqu'à une demi-seconde. */
+  brightnessList: (): Promise<ScreenBrightness[]> => (isTauri ? call("brightness_list") : Promise.resolve(structuredClone(mockScreens))),
+  /** Règle la luminosité (0 à 100) ; seule la dernière valeur demandée est appliquée. */
+  brightnessSet: async (name: string, value: number): Promise<void> => {
+    const v = Math.round(Math.max(0, Math.min(100, value)));
+    if (isTauri) return call("brightness_set", { name, value: v });
+    const s = mockScreens.find((x) => x.name === name);
+    if (s) s.value = v;
+  },
 
   moveToMonitor: async (name: string): Promise<void> => {
     if (isTauri) return call("move_to_monitor", { name });

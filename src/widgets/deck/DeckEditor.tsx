@@ -7,11 +7,18 @@ import type { SettingEditorProps } from "../../sdk/types";
 import { AppIcon } from "../apps/AppIcon";
 import { ActionForm, defaultAction, summary } from "../shortcuts/ShortcutsEditor";
 import { FaceVisual } from "./face";
-import { atPath, COLORS, newId, onColor, runSteps, setAtPath, sharexFolder, type ButtonFace, type ButtonImage, type DeckButton, type Step } from "./model";
+import { useSoftDim } from "../../sdk/brightness";
+import { atPath, COLORS, newId, onColor, runSteps, setAtPath, sharexFolder, type BrightnessStep, type ButtonFace, type ButtonImage, type DeckButton, type Step } from "./model";
+
+const BRIGHTNESS_TARGETS: Record<BrightnessStep["target"], string> = { edge: "Edge", others: "autres écrans", all: "tous les écrans" };
 
 function stepSummary(s: Step): string {
   if (s.kind === "delay") return `Pause ${(s.ms / 1000).toLocaleString("fr-FR")} s`;
   if (s.kind === "audio") return s.target === "input" ? "Micro : couper / réactiver" : "Son : couper / réactiver";
+  if (s.kind === "brightness") {
+    const t = BRIGHTNESS_TARGETS[s.target] ?? "Edge";
+    return s.mode === "set" ? `Luminosité ${t} : ${s.value} %` : `Luminosité ${t} : ${s.mode === "up" ? "+" : "−"}${s.value} %`;
+  }
   return summary(s);
 }
 
@@ -214,6 +221,21 @@ function StepsForm({ steps, onChange }: { steps: Step[]; onChange: (s: Step[]) =
                   <input type="number" min={0} max={60} step={0.5} value={s.ms / 1000} onChange={(e) => set(i, { kind: "delay", ms: Math.round(Number(e.target.value) * 1000) })} />
                   secondes
                 </label>
+              ) : s.kind === "brightness" ? (
+                <div className="dke-inline">
+                  <select value={s.target} onChange={(e) => set(i, { ...s, target: e.target.value as BrightnessStep["target"] })} aria-label="Écrans">
+                    <option value="edge">Edge</option>
+                    <option value="others">Autres écrans</option>
+                    <option value="all">Tous les écrans</option>
+                  </select>
+                  <select value={s.mode} onChange={(e) => set(i, { ...s, mode: e.target.value as BrightnessStep["mode"] })} aria-label="Réglage">
+                    <option value="set">à</option>
+                    <option value="up">plus</option>
+                    <option value="down">moins</option>
+                  </select>
+                  <input type="number" min={0} max={100} step={5} value={s.value} onChange={(e) => set(i, { ...s, value: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })} aria-label="Pourcentage" />
+                  %
+                </div>
               ) : s.kind === "audio" ? (
                 <select value={s.target} onChange={(e) => set(i, { kind: "audio", target: e.target.value as "input" | "output" })}>
                   <option value="input">Couper / réactiver le micro</option>
@@ -230,6 +252,7 @@ function StepsForm({ steps, onChange }: { steps: Step[]; onChange: (s: Step[]) =
         <button type="button" className="chip" onClick={() => { onChange([...steps, defaultAction("open")]); setOpen(steps.length); }}><Icon name="plus" /> Action</button>
         <button type="button" className="chip" onClick={() => onChange([...steps, { kind: "delay", ms: 1000 }])}><Icon name="clock" /> Pause</button>
         <button type="button" className="chip" onClick={() => onChange([...steps, { kind: "audio", target: "input" }])}><Icon name="mic" /> Micro</button>
+        <button type="button" className="chip" onClick={() => { onChange([...steps, { kind: "brightness", target: "edge", mode: "set", value: 50 }]); setOpen(steps.length); }}><Icon name="sun" /> Luminosité</button>
       </div>
     </div>
   );
@@ -239,11 +262,12 @@ function StepsForm({ steps, onChange }: { steps: Step[]; onChange: (s: Step[]) =
 function TestSteps({ steps }: { steps: Step[] }) {
   const [res, setRes] = useState<{ ok: boolean; msg: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const softDim = useSoftDim();
   const test = async () => {
     setBusy(true);
     setRes(null);
     try {
-      await runSteps(steps, () => {});
+      await runSteps(steps, () => {}, softDim);
       setRes({ ok: true, msg: "Action lancée sans erreur." });
     } catch (e) {
       setRes({ ok: false, msg: String(e).replace(/^Error: /, "") });

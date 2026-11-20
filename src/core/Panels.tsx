@@ -1,10 +1,12 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { bridge, isTauri, type MonitorInfo } from "../bridge";
+import { bridge, isTauri, type MonitorInfo, type ScreenBrightness } from "../bridge";
+import { setScreenBrightness, useBrightness } from "../sdk/brightness";
+import { Slider } from "../sdk/components";
 import { Icon } from "../sdk/icons";
 import { isUserWidget, useRegistryVersion, useUserWidgetsInfo, widgetRegistry } from "../sdk/registry";
 import type { SettingField, WidgetDefinition } from "../sdk/types";
 import { IconPicker } from "./IconPicker";
-import { findFreeSpot, GRID, isFree, type AppConfig, type Page, type Rect, type WidgetInstance } from "./layout";
+import { clampDim, findFreeSpot, GRID, isFree, MAX_SOFT_DIM, type AppConfig, type Page, type Rect, type WidgetInstance } from "./layout";
 
 export function Sheet({ title, onClose, children }: { title: ReactNode; onClose: () => void; children: ReactNode }) {
   return (
@@ -254,6 +256,69 @@ export function AppSettings({ config, onChange, onClose }: { config: AppConfig; 
   );
 }
 
+const screenLabel = (s: ScreenBrightness, i: number) => (s.isEdge ? "Xeneon Edge" : s.label || `Écran ${i + 1}`);
+
+/** Luminosité : test DDC/CI de chaque écran, curseurs, voile logiciel de secours. */
+function BrightnessForm({ config, onChange }: { config: AppConfig; onChange: (c: AppConfig) => void }) {
+  const { screens } = useBrightness();
+  const [test, setTest] = useState<{ busy: boolean; list: ScreenBrightness[] | null; error: string | null }>({ busy: false, list: null, error: null });
+  const runTest = async () => {
+    setTest({ busy: true, list: null, error: null });
+    try {
+      setTest({ busy: false, list: await bridge.brightnessList(), error: null });
+    } catch (e) {
+      setTest({ busy: false, list: null, error: String(e) });
+    }
+  };
+  const edge = screens?.find((s) => s.isEdge);
+  const soft = config.display.softDim;
+  return (
+    <div className="form-row is-wide">
+      <span className="form-label">Luminosité</span>
+      <div className="bri-form">
+        {(screens ?? []).filter((s) => s.supported).map((s, i) => (
+          <div key={s.name} className="bri-form-row">
+            <span className="bri-form-name">{screenLabel(s, i)}</span>
+            <Slider value={s.value ?? 0} onChange={(v) => void setScreenBrightness(s.name, v)} ariaLabel={`Luminosité ${screenLabel(s, i)}`} />
+            <span className="bri-form-val">{s.value ?? "–"} %</span>
+          </div>
+        ))}
+        {!edge?.supported && (
+          <div className="bri-form-row">
+            <span className="bri-form-name">Edge (voile)</span>
+            <Slider
+              value={100 - soft}
+              onChange={(v) => onChange({ ...config, display: { ...config.display, softDim: clampDim(100 - Math.max(100 - MAX_SOFT_DIM, v)) } })}
+              ariaLabel="Luminosité logicielle de l'Edge"
+            />
+            <span className="bri-form-val">{100 - soft} %</span>
+          </div>
+        )}
+      </div>
+      <div className="form-inline-row">
+        <button type="button" className="chip" onClick={() => void runTest()} disabled={test.busy}>
+          <Icon name="sun" /> {test.busy ? "Test en cours…" : "Tester la luminosité"}
+        </button>
+      </div>
+      {test.error && <span className="form-help bri-ko">Test impossible : {test.error}</span>}
+      {test.list && (
+        <ul className="bri-test">
+          {test.list.length === 0 && <li className="bri-ko">Aucun écran trouvé.</li>}
+          {test.list.map((s, i) => (
+            <li key={s.name} className={s.supported ? "bri-ok" : "bri-ko"}>
+              <b>{screenLabel(s, i)}</b> ({s.width}×{s.height}) :{" "}
+              {s.supported ? `réglable, actuellement ${s.value} %` : `ne répond pas au DDC/CI${s.error ? ` (${s.error})` : ""}`}
+            </li>
+          ))}
+        </ul>
+      )}
+      <span className="form-help">
+        La vraie luminosité passe par le DDC/CI de l'écran. Si l'Edge ne répond pas, un voile logiciel l'assombrit à la place (le rétroéclairage reste le même).
+      </span>
+    </div>
+  );
+}
+
 /** Couleurs et écran d'affichage. */
 export function AppearanceForm({ config, onChange }: { config: AppConfig; onChange: (c: AppConfig) => void }) {
   const [monitors, setMonitors] = useState<MonitorInfo[]>([]);
@@ -308,8 +373,15 @@ export function AppearanceForm({ config, onChange }: { config: AppConfig; onChan
               <input type="number" min={10} max={95} step={5} value={config.night.level} onChange={(e) => onChange({ ...config, night: { ...config.night, level: Number(e.target.value) } })} aria-label="Assombrissement (%)" />
             )}
           </label>
-          <span className="form-help">Un toucher sur l'Edge le réveille 5 minutes.</span>
+          <label className="form-inline-row">
+            <input type="checkbox" checked={config.night.backlight} onChange={(e) => onChange({ ...config, night: { ...config.night, backlight: e.target.checked } })} />
+            <span>Baisser aussi le rétroéclairage de l'Edge à</span>
+            <input type="number" min={0} max={100} step={5} value={config.night.backlightLevel} onChange={(e) => onChange({ ...config, night: { ...config.night, backlightLevel: Math.max(0, Math.min(100, Number(e.target.value) || 0)) } })} aria-label="Luminosité de nuit (%)" />
+            <span>%</span>
+          </label>
+          <span className="form-help">Un toucher sur l'Edge le réveille 5 minutes. Le rétroéclairage (si l'Edge accepte le réglage) revient ensuite à sa valeur d'avant.</span>
         </div>
+        <BrightnessForm config={config} onChange={onChange} />
         <label className="form-row">
           <span className="form-label">Couleur d'accent</span>
           <input type="color" value={config.theme.accent} onChange={(e) => onChange({ ...config, theme: { ...config.theme, accent: e.target.value } })} />

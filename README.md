@@ -21,6 +21,7 @@ Application **Tauri 2** (backend Rust + interface React/TypeScript), légère et
 | Page web | Intègre Home Assistant, Grafana, etc. |
 | Applications | Tes logiciels en un toucher, avec leurs vraies icônes (recherche parmi les applis installées ou chemin d'un .exe) |
 | Son | Volume et sourdine de la sortie et du micro, volume de chaque appli |
+| Luminosité | Vraie luminosité de l'Edge et des autres écrans (DDC/CI) ; voile logiciel si l'Edge ne répond pas |
 | Batteries | Périphériques sans fil Logitech (G HUB, interface non officielle) et Corsair (SDK iCUE officiel, téléchargé chez Corsair et vérifié) |
 | Réseau | Débit descendant / montant en direct, ping, adresses IP locale et publique |
 | Discord | Micro et sourdine de Discord synchronisés dans les deux sens (connexion directe, [mise en route](docs/discord.md)), ou mode raccourcis clavier |
@@ -74,7 +75,12 @@ s'affiche avec Teams ou Outlook).
 (ex. `cs2`, `teams`, ou « Capturer l'appli active ») ou dès qu'une appli est en plein écran. L'Edge y bascule tout seul
 et revient à la page d'avant quand l'appli n'est plus au premier plan.
 
-**Mode nuit** (Studio → Apparence) : grande horloge discrète ou écran assombri sur une plage horaire ; un toucher réveille l'Edge 5 minutes.
+**Mode nuit** (Studio → Apparence) : grande horloge discrète ou écran assombri sur une plage horaire, avec en option
+le vrai rétroéclairage de l'Edge baissé (rétabli ensuite) ; un toucher réveille l'Edge 5 minutes.
+
+**Luminosité** (Studio → Apparence) : « Tester la luminosité » indique quels écrans acceptent le réglage par DDC/CI,
+avec un curseur pour chacun. Si l'Edge ne répond pas, un voile logiciel l'assombrit à la place. Aussi disponible :
+widget « Luminosité » et étape « Luminosité » des boutons du Deck (valeur fixe, plus ou moins).
 
 ### Sur l'Edge, au doigt
 
@@ -144,6 +150,7 @@ src/
   widgets/<nom>/     un dossier par widget
 src-tauri/src/
   display.rs         détection de l'Edge et placement de la fenêtre
+  brightness.rs      luminosité des écrans par DDC/CI (dxva2), un seul échange à la fois
   system.rs          CPU/RAM (sysinfo) + capteurs LibreHardwareMonitor
   media.rs           lecture en cours Windows (SMTC) + contrôles
   keys.rs            simulation de touches (SendInput)

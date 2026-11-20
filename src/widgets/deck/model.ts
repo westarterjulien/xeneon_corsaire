@@ -1,7 +1,16 @@
 import { bridge, type Action, type InstalledApp } from "../../bridge";
+import { changeBrightness, type BrightnessTarget, type SoftDimApi } from "../../sdk/brightness";
 
-/** Étape d'un bouton : une action, une pause, ou basculer la sourdine du micro / du son. */
-export type Step = Action | { kind: "delay"; ms: number } | { kind: "audio"; target: "input" | "output" };
+/** Réglage de luminosité : valeur fixe, ou plus / moins un écart (en %). */
+export interface BrightnessStep {
+  kind: "brightness";
+  target: BrightnessTarget;
+  mode: "set" | "up" | "down";
+  value: number;
+}
+
+/** Étape d'un bouton : une action, une pause, basculer la sourdine du micro / du son, ou la luminosité. */
+export type Step = Action | { kind: "delay"; ms: number } | { kind: "audio"; target: "input" | "output" } | BrightnessStep;
 
 export interface ButtonImage {
   /** data: URL (PNG redimensionné ou SVG), enregistrée dans la configuration. */
@@ -47,10 +56,11 @@ export function onColor(hex?: string): string {
 const sleep = (ms: number) => new Promise((r) => window.setTimeout(r, ms));
 
 /** Exécute les étapes dans l'ordre ; s'arrête à la première erreur. */
-export async function runSteps(steps: Step[], goTo: (page: number) => void) {
+export async function runSteps(steps: Step[], goTo: (page: number) => void, softDim?: SoftDimApi) {
   for (const s of steps) {
     if (s.kind === "delay") await sleep(Math.max(0, Math.min(60_000, Number(s.ms) || 0)));
     else if (s.kind === "page") goTo(s.page);
+    else if (s.kind === "brightness") await changeBrightness(s.target, s.mode, Math.max(0, Math.min(100, Number(s.value) || 0)), softDim);
     else if (s.kind === "audio") {
       const st = await bridge.audioState();
       const cur = s.target === "input" ? st.input : st.output;

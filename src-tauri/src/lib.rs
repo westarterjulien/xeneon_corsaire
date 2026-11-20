@@ -1,6 +1,7 @@
 mod actions;
 mod apps;
 mod audio;
+mod brightness;
 mod calendar;
 mod clipboard;
 mod config;
@@ -64,6 +65,8 @@ pub fn run() {
             config::save_config,
             display::list_monitors,
             display::move_to_monitor,
+            brightness::brightness_list,
+            brightness::brightness_set,
             user_widgets::user_widgets,
             user_widgets::create_user_widget,
             studio::open_studio,

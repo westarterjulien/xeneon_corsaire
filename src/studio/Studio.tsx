@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import { bridge, isTauri } from "../bridge";
 import { Grid } from "../core/Grid";
-import { createInstance, findFreeSpot, GRID, isFree, moveWidget, type Page, type PageAuto, type Rect, type WidgetInstance } from "../core/layout";
+import { clampDim, createInstance, findFreeSpot, GRID, isFree, moveWidget, type Page, type PageAuto, type Rect, type WidgetInstance } from "../core/layout";
 import { AppearanceForm, MoveToPage, SettingsForm, SizeControls } from "../core/Panels";
 import { useAppConfig } from "../core/store";
 import { publish, subscribe } from "../core/sync";
@@ -11,12 +11,13 @@ import { Icon } from "../sdk/icons";
 import { PageContext } from "../sdk/page";
 import { isUserWidget, useRegistryVersion, useUserWidgetsInfo, widgetRegistry } from "../sdk/registry";
 import { ThemeContext } from "../sdk/theme";
+import { SoftDimContext } from "../sdk/brightness";
 import type { WidgetDefinition } from "../sdk/types";
 
 // ---------- Catégories de la bibliothèque ----------
 const CATEGORIES: { id: string; name: string; color: string; types: string[] }[] = [
   { id: "essentials", name: "Essentiels", color: "#7aa2ff", types: ["clock", "weather", "web"] },
-  { id: "system", name: "Système", color: "#34d399", types: ["system", "network", "batteries"] },
+  { id: "system", name: "Système", color: "#34d399", types: ["system", "network", "batteries", "brightness"] },
   { id: "audio", name: "Audio & jeu", color: "#f472b6", types: ["media", "sound", "discord"] },
   { id: "work", name: "Travail", color: "#a78bfa", types: ["agenda", "teams", "clipboard"] },
   { id: "launch", name: "Lanceurs", color: "#fbbf24", types: ["deck", "apps", "shortcuts"] },
@@ -376,6 +377,11 @@ export default function Studio() {
   const pageNames = pages.map((p) => p.name).join("\u0000");
   const pageApi = useMemo(() => ({ index, count: pages.length, names: pageNames.split("\u0000"), goTo }), [index, pages.length, pageNames, goTo]);
   const theme = useMemo(() => config?.theme ?? { accent: "#a9c4ff", background: "#07090c" }, [config?.theme]);
+  const softDim = config?.display.softDim ?? 0;
+  const softApi = useMemo(
+    () => ({ value: softDim, set: (v: number) => setConfig((c) => (c ? { ...c, display: { ...c.display, softDim: clampDim(v) } } : c)) }),
+    [softDim, setConfig],
+  );
 
   // Suppr. retire le widget sélectionné, Échap désélectionne (hors champs de saisie).
   const selRef = useRef<{ selected: string | null; remove: () => void }>({ selected: null, remove: () => {} });
@@ -459,6 +465,7 @@ export default function Studio() {
   return (
     <ThemeContext.Provider value={theme}>
       <PageContext.Provider value={pageApi}>
+      <SoftDimContext.Provider value={softApi}>
         <div className="sx" style={{ "--accent": theme.accent, "--bg": theme.background } as CSSProperties}>
           {/* ---------- Barre du haut ---------- */}
           <header className="sx-top">
@@ -624,6 +631,7 @@ export default function Studio() {
           )}
           {notice && <div className="sx-toast">{notice}</div>}
         </div>
+      </SoftDimContext.Provider>
       </PageContext.Provider>
     </ThemeContext.Provider>
   );

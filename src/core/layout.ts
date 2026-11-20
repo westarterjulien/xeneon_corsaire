@@ -35,12 +35,21 @@ export interface NightMode {
   mode: "dim" | "clock";
   /** Assombrissement en % (mode « dim »). */
   level: number;
+  /** Baisser aussi le vrai rétroéclairage de l'Edge (DDC/CI), restauré au réveil. */
+  backlight: boolean;
+  /** Luminosité de l'Edge pendant la nuit, en %. */
+  backlightLevel: number;
 }
 
 export interface AppConfig {
   version: 1;
   theme: { accent: string; background: string };
-  display: { monitor: string | null; hideTaskbar: boolean };
+  display: {
+    monitor: string | null;
+    hideTaskbar: boolean;
+    /** Voile logiciel permanent sur l'Edge, en % (secours quand l'écran ne répond pas au DDC/CI). */
+    softDim: number;
+  };
   night: NightMode;
   pages: Page[];
 }
@@ -81,8 +90,8 @@ export function defaultConfig(): AppConfig {
   return {
     version: 1,
     theme: { accent: "#a9c4ff", background: "#07090c" },
-    display: { monitor: null, hideTaskbar: true },
-    night: { enabled: false, from: "23:00", to: "07:00", mode: "clock", level: 75 },
+    display: { monitor: null, hideTaskbar: true, softDim: 0 },
+    night: { enabled: false, from: "23:00", to: "07:00", mode: "clock", level: 75, backlight: false, backlightLevel: 10 },
     pages: [
       {
         id: uid(),
@@ -104,6 +113,10 @@ export function defaultConfig(): AppConfig {
   };
 }
 
+/** Voile logiciel : jamais au point de rendre l'écran illisible. */
+export const MAX_SOFT_DIM = 85;
+export const clampDim = (v: unknown) => Math.round(Math.max(0, Math.min(MAX_SOFT_DIM, Number(v) || 0)));
+
 /** Nettoie une configuration chargée depuis le disque (widgets inconnus, positions invalides). */
 export function sanitizeConfig(raw: unknown): AppConfig {
   const base = defaultConfig();
@@ -124,7 +137,7 @@ export function sanitizeConfig(raw: unknown): AppConfig {
   return {
     version: 1,
     theme,
-    display: { ...base.display, ...(c.display ?? {}) },
+    display: { ...base.display, ...(c.display ?? {}), softDim: clampDim((c.display as { softDim?: unknown } | undefined)?.softDim) },
     night: { ...base.night, ...(c.night ?? {}) },
     pages,
   };
